@@ -14,7 +14,7 @@ st.divider()
 
 st.header("👩‍🎓 Student Registration")
 
-st.write("Enter the student's academic information.")
+st.write("Enter the student's academic and learning information.")
 
 with st.form("student_registration"):
 
@@ -39,16 +39,26 @@ with st.form("student_registration"):
         "Current Mastery (%)",
         min_value=0,
         max_value=100,
-        value=42,
-        step=1
+        value=42
     )
 
     target_mastery = st.number_input(
         "Target Mastery (%)",
         min_value=0,
         max_value=100,
-        value=80,
-        step=1
+        value=80
+    )
+
+    st.subheader("🧠 Learning Strengths and Weaknesses")
+
+    weak_topics_input = st.text_input(
+        "Weak Topics",
+        placeholder="Fractions, Decimals"
+    )
+
+    strong_topics_input = st.text_input(
+        "Strong Topics",
+        placeholder="Percentages, Basic arithmetic"
     )
 
     submitted = st.form_submit_button(
@@ -58,26 +68,59 @@ with st.form("student_registration"):
 
     if submitted:
 
+        weak_topics = [
+            topic.strip()
+            for topic in weak_topics_input.split(",")
+            if topic.strip()
+        ]
+
+        strong_topics = [
+            topic.strip()
+            for topic in strong_topics_input.split(",")
+            if topic.strip()
+        ]
+
+        overlap = {
+            topic.lower() for topic in weak_topics
+        } & {
+            topic.lower() for topic in strong_topics
+        }
+
         if not student_name.strip() or not student_id.strip():
             st.error("Please enter student name and ID.")
 
+        elif not weak_topics or not strong_topics:
+            st.error("Please enter at least one weak topic and one strong topic.")
+
+        elif overlap:
+            st.error(
+                "A topic cannot be listed as both weak and strong: "
+                + ", ".join(overlap)
+            )
+
+        elif target_mastery <= current_mastery:
+            st.error("Target mastery must be greater than current mastery.")
+
         else:
+
             st.session_state["student_preview"] = {
                 "name": student_name.strip(),
                 "id": student_id.strip(),
                 "subject": subject,
                 "current_mastery": current_mastery,
-                "target_mastery": target_mastery
+                "target_mastery": target_mastery,
+                "weak_topics": weak_topics,
+                "strong_topics": strong_topics
             }
 
-            st.success("Student registration submitted!")
+            st.success("Student profile submitted successfully!")
 
 if "student_preview" in st.session_state:
 
     student = st.session_state["student_preview"]
 
     st.divider()
-    st.subheader("📋 Student Academic Profile")
+    st.header("📋 Student Academic Profile")
 
     col1, col2, col3 = st.columns(3)
 
@@ -97,8 +140,18 @@ if "student_preview" in st.session_state:
         f"{student['target_mastery']}%"
     )
 
+    st.subheader("🔴 Areas Requiring Improvement")
+
+    for topic in student["weak_topics"]:
+        st.write(f"🔴 {topic}")
+
+    st.subheader("🟢 Existing Strengths")
+
+    for topic in student["strong_topics"]:
+        st.write(f"🟢 {topic}")
+
     st.info(
-        "Academic information is currently stored in the "
+        "Student information is currently stored in the "
         "Streamlit session. Permanent database storage "
         "will be implemented in a later mission."
     )
