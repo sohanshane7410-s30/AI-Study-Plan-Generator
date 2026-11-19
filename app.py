@@ -14,9 +14,7 @@ st.divider()
 
 st.header("👩‍🎓 Student Registration")
 
-st.write(
-    "Register a student to begin building their personalized learning plan."
-)
+st.write("Register a student and add their academic information.")
 
 with st.form("student_registration"):
 
@@ -30,6 +28,19 @@ with st.form("student_registration"):
         placeholder="Enter a unique student ID"
     )
 
+    subject = st.selectbox(
+        "Academic Subject",
+        ["Mathematics", "Science", "English", "Computer Science", "Other"]
+    )
+
+    custom_subject = ""
+
+    if subject == "Other":
+        custom_subject = st.text_input(
+            "Enter Subject Name",
+            placeholder="Enter your subject"
+        )
+
     submitted = st.form_submit_button(
         "Register Student",
         use_container_width=True
@@ -37,34 +48,40 @@ with st.form("student_registration"):
 
     if submitted:
 
-        if not student_name.strip() or not student_id.strip():
+        final_subject = (
+            custom_subject.strip()
+            if subject == "Other"
+            else subject
+        )
 
-            st.error("Please enter both student name and student ID.")
+        if not student_name.strip() or not student_id.strip():
+            st.error("Please enter student name and ID.")
+
+        elif not final_subject:
+            st.error("Please enter a subject name.")
 
         else:
-
             st.session_state["student_preview"] = {
                 "name": student_name.strip(),
-                "id": student_id.strip()
+                "id": student_id.strip(),
+                "subject": final_subject
             }
 
-            st.success("Student registration form submitted!")
+            st.success("Student registration submitted!")
 
 if "student_preview" in st.session_state:
 
     student = st.session_state["student_preview"]
 
-    st.subheader("Student Profile Preview")
+    st.subheader("📋 Student Profile Preview")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
-    with col1:
-        st.metric("Student Name", student["name"])
-
-    with col2:
-        st.metric("Student ID", student["id"])
+    col1.metric("Student Name", student["name"])
+    col2.metric("Student ID", student["id"])
+    col3.metric("Subject", student["subject"])
 
     st.info(
-        "This is a temporary session preview. "
-        "Permanent database storage will be added in a later task."
+        "Student profile is currently stored in the session. "
+        "Permanent database storage will come later."
     )
