@@ -1,56 +1,44 @@
-"""Supabase authentication and persistence helpers for AI Study Plan Generator.
+"""Supabase authentication and persistent storage helpers.
 
-This module uses the project's Supabase Publishable Key from Streamlit Secrets.
-It never contains passwords, API keys, or service-role credentials.
+Compatible with older Python runtimes used by some Streamlit deployments.
+Uses the Supabase Publishable Key configured in Streamlit Secrets.
+Never place passwords or secret/service-role keys in this file.
 """
 
-from __future__ import annotations
-
-from typing import Any
-
 import streamlit as st
-from supabase import Client, create_client
-
+from supabase import create_client
 
 STUDENT_TABLE = "study_plan_students"
 PLAN_TABLE = "study_plan_history"
 
 
-def _get_client() -> Client:
-    """Create one Supabase client per Streamlit browser session."""
+def _get_client():
+    """Create and cache a Supabase client for this Streamlit session."""
     project_url = st.secrets.get("SUPABASE_URL", "")
     publishable_key = st.secrets.get("SUPABASE_KEY", "")
 
     if not project_url or not publishable_key:
         raise RuntimeError(
             "Supabase settings are missing. Add SUPABASE_URL and "
-            "SUPABASE_KEY in Streamlit App Settings → Secrets."
+            "SUPABASE_KEY in Streamlit App Settings > Secrets."
         )
 
-    if "_supabase_client" not in st.session_state:
-        st.session_state["_supabase_client"] = create_client(
-            project_url,
-            publishable_key,
-        )
+    cached = st.session_state.get("_supabase_client")
+    if cached is None:
+        cached = create_client(project_url, publishable_key)
+        st.session_state["_supabase_client"] = cached
 
-    return st.session_state["_supabase_client"]
+    return cached
 
 
-def render_login_gate() -> tuple[Client | None, str | None]:
-    """Render sign-in until an authenticated Supabase user is present.
-
-    Returns (client, user_id) when signed in; otherwise returns (None, None).
-    The Supabase client is held in Streamlit session state so its Auth session
-    remains available across the app's reruns for this browser session.
-    """
+def render_login_gate():
+    """Render the sign-in form and return (client, user_id) when signed in."""
     try:
         client = _get_client()
     except Exception as exc:
-        st.error(str(exc))
-        st.info(
-            "Check that the Streamlit Secrets contain the correct project URL "
-            "and Publishable Key. Do not put secrets in GitHub."
-        )
+        st.error("Supabase connection settings could not be loaded.")
+        with st.expander("Connection details"):
+            st.code(str(exc))
         return None, None
 
     user_id = st.session_state.get("_supabase_user_id")
@@ -67,15 +55,10 @@ def render_login_gate() -> tuple[Client | None, str | None]:
         left, center, right = st.columns([1, 2, 1])
         with center:
             with st.form("supabase_sign_in_form", clear_on_submit=False):
-                email = st.text_input("Email address", autocomplete="email")
-                password = st.text_input(
-                    "Password",
-                    type="password",
-                    autocomplete="current-password",
-                )
+                email = st.text_input("Email address")
+                password = st.text_input("Password", type="password")
                 submitted = st.form_submit_button(
-                    "Sign in",
-                    use_container_width=True,
+                    "Sign in", use_container_width=True
                 )
 
             if submitted:
@@ -84,13 +67,30 @@ def render_login_gate() -> tuple[Client | None, str | None]:
                 else:
                     try:
                         response = client.auth.sign_in_with_password(
-                            {
-                                "email": email.strip(),
-                                "password": password,
-                            }
+                            {"email": email.strip(), "password": password}
                         )
-                        if not response.user:
+                        user = getattr(response, "user", None)
+                        if user is None:
                             st.error("Supabase did not return a signed-in user.")
                         else:
-                            st.session_state["_supabase_user_id"] = str(
-                                response.user.id
+                            st.session_state["_supabase_user_id"] = str(user.id)
+                            st.session_state["_supabase_user_email"] = (
+                                getattr(user, "email", None) or email.strip()
+                            )
+                            st.rerun()
+                    except Exception as exc:
+                        st.error(
+                            "Sign-in failed. Check your email, password, "
+                            "and Supabase Auth user status."
+                        )
+                        with st.expander("Sign-in details"):
+                            st.code(str(exc))
+
+        st.caption(
+            "Only accounts authorized in Supabase Authentication can sign in. "
+            "Public registration is not enabled in this application."
+        )
+        return None, None
+
+    with st.sidebar:
+        st.caption(
