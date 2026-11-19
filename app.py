@@ -112,7 +112,9 @@ def parse_assessment_history(raw_text):
         try:
             score = float(item)
         except ValueError:
-            errors.append(f"Invalid assessment score: {item}")
+            errors.append(
+                f"Invalid assessment score: {item}"
+            )
             continue
 
         if not 0 <= score <= 100:
@@ -181,7 +183,7 @@ def classify_topic_score(score):
 
 
 # ==========================================
-# 7. RISK DETECTION ENGINE
+# 7. LEARNING RISK DETECTION
 # ==========================================
 
 def detect_learning_risk(student):
@@ -219,7 +221,7 @@ def detect_learning_risk(student):
 
 
 # ==========================================
-# 8. LEARNING TREND ENGINE
+# 8. LEARNING TREND DETECTION
 # ==========================================
 
 def detect_learning_trend(history):
@@ -234,30 +236,29 @@ def detect_learning_trend(history):
             )
         }
 
-    change = round(history[-1] - history[0], 1)
+    change = round(
+        history[-1] - history[0], 1
+    )
 
     if change >= 5:
 
         trend = "IMPROVING"
         explanation = (
-            f"Assessment performance increased by "
-            f"{change} percentage points."
+            f"Performance increased by {change} percentage points."
         )
 
     elif change <= -5:
 
         trend = "DECLINING"
         explanation = (
-            f"Assessment performance decreased by "
-            f"{abs(change)} percentage points."
+            f"Performance decreased by {abs(change)} percentage points."
         )
 
     else:
 
         trend = "STABLE"
         explanation = (
-            "Net assessment change is less than "
-            "5 percentage points."
+            "Net performance change is less than 5 percentage points."
         )
 
     return {
@@ -268,7 +269,7 @@ def detect_learning_trend(history):
 
 
 # ==========================================
-# 9. STUDENT SEGMENTATION ENGINE
+# 9. STUDENT SEGMENTATION
 # ==========================================
 
 def classify_student_segment(student):
@@ -282,38 +283,30 @@ def classify_student_segment(student):
     current = student["current_mastery"]
     target = student["target_mastery"]
 
-    topic_scores = student["topic_scores"]
-
     support_topics = sum(
         classify_topic_score(score) == "NEEDS SUPPORT"
-        for score in topic_scores.values()
+        for score in student["topic_scores"].values()
     )
 
     risk = risk_result["risk"]
     trend = trend_result["trend"]
 
-    # Segment 1: Mastery target achieved.
     if current >= target:
 
         segment = "ENRICHMENT"
 
         explanation = (
-            "The student's mastery target has been achieved. "
-            "Consider advanced assignments and enrichment."
+            "Target achieved. Consider advanced learning activities."
         )
 
-    # Segment 2: High risk students.
     elif risk == "HIGH":
 
         segment = "INTENSIVE SUPPORT"
 
         explanation = (
-            "The student has a substantial mastery gap "
-            "or low current mastery. Investigate promptly "
-            "and consider focused instructional support."
+            "Substantial learning gap or low current mastery."
         )
 
-    # Segment 3: Multiple indicators of additional support.
     elif (
         risk == "MODERATE"
         or trend == "DECLINING"
@@ -322,31 +315,17 @@ def classify_student_segment(student):
 
         segment = "TARGETED SUPPORT"
 
-        reasons = []
-
-        if risk == "MODERATE":
-            reasons.append("moderate screening risk")
-
-        if trend == "DECLINING":
-            reasons.append("declining assessment trend")
-
-        if support_topics >= 2:
-            reasons.append("multiple topics needing support")
-
         explanation = (
-            "Targeted intervention may be useful because of "
-            + ", ".join(reasons)
-            + "."
+            "Targeted practice may be useful based on "
+            "risk, learning trends or topic-level performance."
         )
 
-    # Segment 4: Students needing routine follow-up.
     else:
 
         segment = "PROGRESS MONITORING"
 
         explanation = (
-            "The student has lower immediate screening risk. "
-            "Continue regular assessments and monitor progress."
+            "Continue routine monitoring and regular assessments."
         )
 
     return {
@@ -359,7 +338,146 @@ def classify_student_segment(student):
 
 
 # ==========================================
-# 10. OLD RECORD MIGRATION
+# 10. INTERVENTION PRIORITIZATION ENGINE
+# ==========================================
+
+def calculate_intervention_priority(student):
+
+    current = student["current_mastery"]
+    target = student["target_mastery"]
+    gap = student["mastery_gap"]
+
+    history = student["assessment_history"]
+    topic_scores = student["topic_scores"]
+
+    # Students who achieved their target.
+    if current >= target:
+
+        return {
+            "score": 0,
+            "priority": "P4 - MONITOR",
+            "gap_points": 0,
+            "mastery_points": 0,
+            "trend_points": 0,
+            "topic_points": 0,
+            "support_topics": 0,
+            "recommendation": (
+                "Target achieved. Consider enrichment activities "
+                "and periodic reassessment."
+            )
+        }
+
+    # Factor 1: Mastery gap (maximum 40 points).
+    gap_points = min(gap, 40)
+
+    # Factor 2: Current mastery (maximum 20 points).
+    if current < 40:
+        mastery_points = 20
+
+    elif current < 60:
+        mastery_points = 15
+
+    elif current < 80:
+        mastery_points = 8
+
+    else:
+        mastery_points = 0
+
+    # Factor 3: Learning trend (maximum 20 points).
+    trend_result = detect_learning_trend(history)
+
+    if trend_result["trend"] == "DECLINING":
+        trend_points = 20
+
+    elif trend_result["trend"] == "STABLE":
+        trend_points = 10
+
+    elif trend_result["trend"] == "INSUFFICIENT DATA":
+        trend_points = 8
+
+    else:
+        trend_points = 0
+
+    # Factor 4: Topic-level weaknesses (maximum 15 points).
+    support_topics = sum(
+        classify_topic_score(score) == "NEEDS SUPPORT"
+        for score in topic_scores.values()
+    )
+
+    topic_points = min(
+        support_topics * 5,
+        15
+    )
+
+    # Calculate final score.
+    total_score = (
+        gap_points
+        + mastery_points
+        + trend_points
+        + topic_points
+    )
+
+    # Assign intervention priority.
+    if total_score >= 65:
+
+        priority = "P1 - URGENT"
+
+        recommendation = (
+            "Arrange prompt teacher investigation, review "
+            "foundational concepts and design an individualized "
+            "intervention."
+        )
+
+    elif total_score >= 45:
+
+        priority = "P2 - HIGH"
+
+        recommendation = (
+            "Schedule targeted practice, investigate weak topics "
+            "and reassess learning progress."
+        )
+
+    elif total_score >= 25:
+
+        priority = "P3 - SCHEDULED"
+
+        recommendation = (
+            "Schedule focused learning support and monitor "
+            "the next assessment."
+        )
+
+    else:
+
+        priority = "P4 - MONITOR"
+
+        recommendation = (
+            "Continue regular progress monitoring and "
+            "provide additional practice when needed."
+        )
+
+    return {
+
+        "score": total_score,
+
+        "priority": priority,
+
+        "gap_points": gap_points,
+
+        "mastery_points": mastery_points,
+
+        "trend_points": trend_points,
+
+        "topic_points": topic_points,
+
+        "support_topics": support_topics,
+
+        "recommendation": recommendation
+
+    }
+
+
+# ==========================================
+# 11. OLD RECORD MIGRATION
 # ==========================================
 
 def migrate_records(records):
@@ -397,18 +515,12 @@ def migrate_records(records):
 
         current = max(
             0,
-            min(
-                safe_int(student.get("current_mastery")),
-                100
-            )
+            min(safe_int(student.get("current_mastery")), 100)
         )
 
         target = max(
             0,
-            min(
-                safe_int(student.get("target_mastery"), 80),
-                100
-            )
+            min(safe_int(student.get("target_mastery"), 80), 100)
         )
 
         student["current_mastery"] = current
@@ -512,7 +624,7 @@ st.session_state["students"] = migrate_records(
 
 
 # ==========================================
-# 11. APPLICATION HEADER
+# 12. APPLICATION HEADER
 # ==========================================
 
 st.title("📚 AI Study Plan Generator")
@@ -525,7 +637,7 @@ st.divider()
 
 
 # ==========================================
-# 12. STUDENT REGISTRATION
+# 13. STUDENT REGISTRATION
 # ==========================================
 
 st.header("👩‍🎓 Student Registration")
@@ -535,11 +647,9 @@ with st.form("student_registration"):
     col1, col2 = st.columns(2)
 
     with col1:
-
         student_name = st.text_input("Student Name")
 
     with col2:
-
         student_id = st.text_input("Student ID")
 
     subject = st.selectbox(
@@ -557,14 +667,12 @@ with st.form("student_registration"):
     col1, col2 = st.columns(2)
 
     with col1:
-
         current_mastery = st.number_input(
             "Current Mastery (%)",
             0, 100, 42
         )
 
     with col2:
-
         target_mastery = st.number_input(
             "Target Mastery (%)",
             0, 100, 80
@@ -595,7 +703,7 @@ with st.form("student_registration"):
     st.subheader("📈 Historical Assessment Scores")
 
     history_input = st.text_input(
-        "Enter scores from oldest to newest",
+        "Scores from oldest to newest",
         placeholder="30, 36, 42"
     )
 
@@ -704,15 +812,13 @@ with st.form("student_registration"):
         elif missing_scores:
 
             st.error(
-                "Missing topic assessment scores for: "
+                "Missing topic scores for: "
                 + ", ".join(missing_scores)
             )
 
         elif len(history) < 2:
 
-            st.error(
-                "Enter at least two historical assessment scores."
-            )
+            st.error("Enter at least two assessment scores.")
 
         elif abs(history[-1] - current_mastery) > 0.01:
 
@@ -769,7 +875,7 @@ with st.form("student_registration"):
 
 
 # ==========================================
-# 13. DASHBOARDS
+# 14. ACADEMIC PERFORMANCE DASHBOARD
 # ==========================================
 
 students = st.session_state["students"]
@@ -815,7 +921,7 @@ if students:
     c2.metric("Moderate Priority", moderate)
     c3.metric("Target Achieved", achieved)
 
-    st.subheader("🎯 Student Priority Analysis")
+    st.subheader("Student Priority Analysis")
 
     priority_data = [
         {
@@ -837,11 +943,10 @@ if students:
 
 
     # ======================================
-    # 14. LEARNING GAP ANALYSIS
+    # 15. LEARNING GAP ANALYSIS
     # ======================================
 
     st.divider()
-
     st.header("🧠 Learning Gap Analysis")
 
     gap_data = []
@@ -901,11 +1006,10 @@ if students:
 
 
     # ======================================
-    # 15. RISK DETECTION
+    # 16. LEARNING RISK DETECTION
     # ======================================
 
     st.divider()
-
     st.header("🚨 Student Learning Risk Detection")
 
     risk_data = []
@@ -951,11 +1055,10 @@ if students:
 
 
     # ======================================
-    # 16. TOPIC ANALYSIS
+    # 17. TOPIC-LEVEL PERFORMANCE ANALYSIS
     # ======================================
 
     st.divider()
-
     st.header("📚 Topic-Level Performance Analysis")
 
     topic_rows = []
@@ -981,9 +1084,9 @@ if students:
             else:
                 category = "Unspecified"
 
-            review_flag = ""
-
             status = classify_topic_score(score)
+
+            review_flag = ""
 
             if category == "Declared Weak" and status == "STRONG":
                 review_flag = "Review weak topic label"
@@ -994,7 +1097,6 @@ if students:
             topic_rows.append({
 
                 "Student": s["name"],
-                "Subject": s["subject"],
                 "Topic": topic,
                 "Score (%)": score,
                 "Declared Category": category,
@@ -1046,11 +1148,10 @@ if students:
 
 
     # ======================================
-    # 17. LEARNING TREND ANALYSIS
+    # 18. LEARNING TREND ANALYSIS
     # ======================================
 
     st.divider()
-
     st.header("📈 Student Learning Trend Detection")
 
     trend_rows = []
@@ -1077,31 +1178,19 @@ if students:
 
     trend_df = pd.DataFrame(trend_rows)
 
-    trend_count = {
-        trend: sum(
+    for trend in [
+        "IMPROVING",
+        "DECLINING",
+        "STABLE",
+        "INSUFFICIENT DATA"
+    ]:
+
+        count = sum(
             row["Learning Trend"] == trend
             for row in trend_rows
         )
-        for trend in [
-            "IMPROVING",
-            "DECLINING",
-            "STABLE",
-            "INSUFFICIENT DATA"
-        ]
-    }
 
-    c1, c2 = st.columns(2)
-
-    c1.metric("Improving", trend_count["IMPROVING"])
-    c2.metric("Declining", trend_count["DECLINING"])
-
-    c1, c2 = st.columns(2)
-
-    c1.metric("Stable", trend_count["STABLE"])
-    c2.metric(
-        "Insufficient Data",
-        trend_count["INSUFFICIENT DATA"]
-    )
+        st.write(f"**{trend}:** {count} students")
 
     st.dataframe(
         trend_df,
@@ -1115,39 +1204,30 @@ if students:
             f"{s['name']} — Assessment History"
         ):
 
-            history = s["assessment_history"]
-
-            result = detect_learning_trend(history)
-
-            st.write(result["explanation"])
-
-            if len(history) >= 2:
+            if len(s["assessment_history"]) >= 2:
 
                 history_df = pd.DataFrame({
-                    "Mastery (%)": history
+                    "Mastery (%)": s["assessment_history"]
                 })
 
                 history_df.index = [
                     f"Assessment {i + 1}"
-                    for i in range(len(history))
+                    for i in range(len(s["assessment_history"]))
                 ]
 
                 st.line_chart(history_df)
 
+            else:
+
+                st.info("Insufficient assessment history.")
+
 
     # ======================================
-    # 18. STUDENT SEGMENTATION
+    # 19. STUDENT SEGMENTATION
     # ======================================
 
     st.divider()
-
     st.header("👥 Student Segmentation Engine")
-
-    st.write(
-        "Students are grouped according to mastery, "
-        "learning risk, assessment trends and topic-level "
-        "performance."
-    )
 
     segment_rows = []
 
@@ -1158,18 +1238,21 @@ if students:
         segment_rows.append({
 
             "Student": s["name"],
-            "Student ID": s["id"],
-            "Mastery": s["current_mastery"],
-            "Mastery Gap": s["mastery_gap"],
+            "ID": s["id"],
             "Risk": result["risk"],
             "Trend": result["trend"],
-            "Topics Needing Support": result["support_topics"],
             "Segment": result["segment"],
             "Reason": result["explanation"]
 
         })
 
     segment_df = pd.DataFrame(segment_rows)
+
+    st.dataframe(
+        segment_df,
+        use_container_width=True,
+        hide_index=True
+    )
 
     segment_names = [
         "INTENSIVE SUPPORT",
@@ -1179,108 +1262,180 @@ if students:
     ]
 
     segment_counts = {
-        segment: sum(
-            row["Segment"] == segment
+        name: sum(
+            row["Segment"] == name
             for row in segment_rows
         )
-        for segment in segment_names
+        for name in segment_names
     }
-
-    st.subheader("Segment Distribution")
-
-    c1, c2 = st.columns(2)
-
-    c1.metric(
-        "Intensive Support",
-        segment_counts["INTENSIVE SUPPORT"]
-    )
-
-    c2.metric(
-        "Targeted Support",
-        segment_counts["TARGETED SUPPORT"]
-    )
-
-    c1, c2 = st.columns(2)
-
-    c1.metric(
-        "Progress Monitoring",
-        segment_counts["PROGRESS MONITORING"]
-    )
-
-    c2.metric(
-        "Enrichment",
-        segment_counts["ENRICHMENT"]
-    )
 
     segment_chart = pd.DataFrame({
 
-        "Students": [
-            segment_counts[name]
-            for name in segment_names
-        ]
+        "Students": list(segment_counts.values())
 
     }, index=segment_names)
 
     st.bar_chart(segment_chart)
 
-    st.subheader("Student Segment Report")
+
+    # ======================================
+    # 20. INTERVENTION PRIORITIZATION
+    # ======================================
+
+    st.divider()
+
+    st.header("🎯 Intervention Prioritization Engine")
+
+    st.write(
+        "Students are ranked by a transparent screening score "
+        "built from mastery gaps, current mastery, learning "
+        "trends and weak topic performance."
+    )
+
+    intervention_rows = []
+
+    for s in students:
+
+        result = calculate_intervention_priority(s)
+
+        intervention_rows.append({
+
+            "Student": s["name"],
+            "Student ID": s["id"],
+            "Mastery": s["current_mastery"],
+            "Mastery Gap": s["mastery_gap"],
+            "Gap Points": result["gap_points"],
+            "Mastery Points": result["mastery_points"],
+            "Trend Points": result["trend_points"],
+            "Topic Points": result["topic_points"],
+            "Intervention Score": result["score"],
+            "Priority": result["priority"],
+            "Recommendation": result["recommendation"]
+
+        })
+
+    intervention_df = pd.DataFrame(intervention_rows)
+
+    intervention_df = intervention_df.sort_values(
+        by=["Intervention Score", "Student"],
+        ascending=[False, True]
+    ).reset_index(drop=True)
+
+    intervention_df.insert(
+        0,
+        "Rank",
+        range(1, len(intervention_df) + 1)
+    )
+
+    p1_count = sum(
+        row["Priority"] == "P1 - URGENT"
+        for row in intervention_rows
+    )
+
+    p2_count = sum(
+        row["Priority"] == "P2 - HIGH"
+        for row in intervention_rows
+    )
+
+    p3_count = sum(
+        row["Priority"] == "P3 - SCHEDULED"
+        for row in intervention_rows
+    )
+
+    p4_count = sum(
+        row["Priority"] == "P4 - MONITOR"
+        for row in intervention_rows
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric("P1 Urgent", p1_count)
+    c2.metric("P2 High", p2_count)
+    c3.metric("P3 Scheduled", p3_count)
+    c4.metric("P4 Monitor", p4_count)
+
+    st.subheader("Ranked Intervention Queue")
 
     st.dataframe(
-        segment_df[
+        intervention_df[
             [
+                "Rank",
                 "Student",
                 "Student ID",
-                "Mastery",
-                "Mastery Gap",
-                "Risk",
-                "Trend",
-                "Topics Needing Support",
-                "Segment"
+                "Intervention Score",
+                "Priority",
+                "Mastery Gap"
             ]
         ],
         use_container_width=True,
         hide_index=True
     )
 
-    st.subheader("🔍 Segment Investigation")
+    st.subheader("📊 Intervention Score Comparison")
 
-    for segment in segment_names:
+    score_chart = intervention_df[
+        ["Student", "Intervention Score"]
+    ].set_index("Student")
 
-        members = [
-            row for row in segment_rows
-            if row["Segment"] == segment
-        ]
+    st.bar_chart(score_chart)
+
+    st.subheader("🔎 Intervention Decision Explanations")
+
+    for s in students:
+
+        result = calculate_intervention_priority(s)
 
         with st.expander(
-            f"{segment} — {len(members)} students"
+            f"{s['name']} — {result['priority']} "
+            f"— Score {result['score']}"
         ):
 
-            if members:
+            c1, c2 = st.columns(2)
 
-                for member in members:
+            c1.metric(
+                "Final Intervention Score",
+                f"{result['score']} / 95"
+            )
 
-                    st.write(
-                        f"**{member['Student']}** "
-                        f"({member['Student ID']})"
-                    )
+            c2.metric(
+                "Mastery Gap",
+                f"{s['mastery_gap']} points"
+            )
 
-                    st.write(member["Reason"])
+            st.write("**Score Breakdown**")
 
-                    st.divider()
+            st.write(
+                f"Mastery gap: "
+                f"{result['gap_points']} / 40"
+            )
 
-            else:
+            st.write(
+                f"Current mastery: "
+                f"{result['mastery_points']} / 20"
+            )
 
-                st.info(
-                    "No students currently belong to this segment."
-                )
+            st.write(
+                f"Learning trend: "
+                f"{result['trend_points']} / 20"
+            )
+
+            st.write(
+                f"Topic weaknesses: "
+                f"{result['topic_points']} / 15"
+            )
+
+            st.divider()
+
+            st.write("**Recommended next action**")
+
+            st.info(result["recommendation"])
 
 
     # ======================================
-    # 19. INDIVIDUAL STUDENT PROFILES
+    # 21. INDIVIDUAL STUDENT PROFILES
     # ======================================
 
     st.divider()
-
     st.header("🔍 Individual Student Profiles")
 
     for s in students:
@@ -1306,11 +1461,9 @@ if students:
                 f"{s['mastery_gap']} points"
             )
 
-            segment = classify_student_segment(s)
-
             st.write("**Subject:**", s["subject"])
+
             st.write("**Priority:**", s["priority"])
-            st.write("**Learning Segment:**", segment["segment"])
 
             st.write("**Weak Topics:**")
 
@@ -1322,22 +1475,22 @@ if students:
             for topic in s["strong_topics"]:
                 st.write(f"🟢 {topic}")
 
-            st.write("**Topic Assessment Scores:**")
+            st.write("**Assessment History:**", s["assessment_history"])
 
-            for topic, score in s["topic_scores"].items():
-
-                st.write(
-                    f"{topic}: {score}% — "
-                    f"{classify_topic_score(score)}"
-                )
-
-            st.write(
-                "**Assessment History:**",
-                s["assessment_history"]
-            )
+            result = calculate_intervention_priority(s)
 
             st.metric(
-                "Weekly Study Capacity",
+                "Intervention Score",
+                f"{result['score']} / 95"
+            )
+
+            st.write(
+                "**Intervention Priority:**",
+                result["priority"]
+            )
+
+            st.write(
+                "**Weekly Study Capacity:**",
                 f"{s['weekly_minutes'] / 60:g} hours"
             )
 
@@ -1350,7 +1503,7 @@ else:
 
 
 # ==========================================
-# 20. APPLICATION FOOTER
+# 22. APPLICATION FOOTER
 # ==========================================
 
 st.divider()
@@ -1360,9 +1513,10 @@ st.caption(
 )
 
 st.warning(
-    "Student segmentation uses initial rule-based screening "
-    "criteria. It is not a validated predictive model or a "
-    "replacement for teacher judgment. Student records are "
-    "currently stored in temporary Streamlit session memory. "
-    "Supabase persistence will be implemented later."
+    "The intervention score is an initial heuristic screening "
+    "system, not a validated predictive model or an automatic "
+    "instructional decision. Teachers should investigate the "
+    "underlying evidence before assigning interventions. "
+    "Student records currently use temporary Streamlit session "
+    "memory. Supabase persistence will be implemented later."
 )
