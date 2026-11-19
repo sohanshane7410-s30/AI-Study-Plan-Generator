@@ -7,13 +7,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize session storage
+# Initialize student records
 if "students" not in st.session_state:
     st.session_state["students"] = []
 
 
+# Topic processing
 def parse_topics(raw_text):
-    """Clean topics and remove duplicates."""
     topics = []
     seen = set()
 
@@ -27,101 +27,85 @@ def parse_topics(raw_text):
     return topics
 
 
-# Application header
+# Priority classification engine
+def classify_priority(current, target):
+
+    if current >= target:
+        return "TARGET ACHIEVED"
+
+    elif current < 40:
+        return "URGENT"
+
+    elif current < 60:
+        return "HIGH"
+
+    else:
+        return "MODERATE"
+
+
+# Application heading
 st.title("📚 AI Study Plan Generator")
 st.caption("Personalized Learning Starts Here")
 
 st.divider()
 
+
+# ==================================
+# STUDENT REGISTRATION
+# ==================================
+
 st.header("👩‍🎓 Student Registration")
 
-st.write(
-    "Register students and create their personalized academic profiles."
-)
-
-# Registration form
 with st.form("student_registration"):
 
-    student_name = st.text_input(
-        "Student Name",
-        placeholder="Enter student name"
-    )
-
-    student_id = st.text_input(
-        "Student ID",
-        placeholder="Enter a unique ID"
-    )
+    student_name = st.text_input("Student Name")
+    student_id = st.text_input("Student ID")
 
     subject = st.selectbox(
         "Academic Subject",
-        [
-            "Mathematics",
-            "Science",
-            "English",
-            "Computer Science"
-        ]
+        ["Mathematics", "Science", "English", "Computer Science"]
     )
 
-    st.subheader("📊 Academic Performance")
+    st.subheader("Academic Performance")
 
     current_mastery = st.number_input(
         "Current Mastery (%)",
-        min_value=0,
-        max_value=100,
-        value=42,
-        step=1
+        0, 100, 42
     )
 
     target_mastery = st.number_input(
         "Target Mastery (%)",
-        min_value=0,
-        max_value=100,
-        value=80,
-        step=1
+        0, 100, 80
     )
 
-    st.subheader("🧠 Learning Strengths and Weaknesses")
+    st.subheader("Learning Strengths and Weaknesses")
 
-    weak_topics_input = st.text_input(
+    weak_input = st.text_input(
         "Weak Topics",
-        placeholder="Fractions, Decimals"
+        "Fractions, Decimals"
     )
 
-    strong_topics_input = st.text_input(
+    strong_input = st.text_input(
         "Strong Topics",
-        placeholder="Percentages, Basic arithmetic"
+        "Percentages, Basic arithmetic"
     )
 
-    st.subheader("⏰ Study Availability")
+    st.subheader("Study Availability")
 
-    daily_study_minutes = st.number_input(
-        "Daily Available Study Time (minutes)",
-        min_value=15,
-        max_value=240,
-        value=120,
-        step=15
+    daily_minutes = st.number_input(
+        "Daily Study Time (minutes)",
+        15, 240, 120, step=15
     )
 
     available_days = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
+        "Monday", "Tuesday", "Wednesday",
+        "Thursday", "Friday", "Saturday", "Sunday"
     ]
 
     study_days = st.multiselect(
         "Preferred Study Days",
         available_days,
-        default=[
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday"
-        ]
+        default=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
     )
 
     submitted = st.form_submit_button(
@@ -134,54 +118,38 @@ with st.form("student_registration"):
         name = student_name.strip()
         clean_id = student_id.strip().upper()
 
-        weak_topics = parse_topics(weak_topics_input)
-        strong_topics = parse_topics(strong_topics_input)
+        weak_topics = parse_topics(weak_input)
+        strong_topics = parse_topics(strong_input)
 
         overlap = (
-            {topic.casefold() for topic in weak_topics}
-            & {topic.casefold() for topic in strong_topics}
+            {t.casefold() for t in weak_topics}
+            & {t.casefold() for t in strong_topics}
         )
 
-        duplicate_id = any(
-            student["id"].casefold() == clean_id.casefold()
-            for student in st.session_state["students"]
-        )
+        existing_ids = [
+            s["id"].casefold()
+            for s in st.session_state["students"]
+        ]
 
         if not name or not clean_id:
-            st.error("Student name and ID are required.")
+            st.error("Enter student name and ID.")
 
-        elif duplicate_id:
-            st.error("This student ID is already registered.")
+        elif clean_id.casefold() in existing_ids:
+            st.error("Student ID already exists.")
 
         elif not weak_topics or not strong_topics:
-            st.error(
-                "Please enter at least one weak and one strong topic."
-            )
+            st.error("Enter at least one weak and one strong topic.")
 
         elif overlap:
-            st.error(
-                "A topic cannot be both weak and strong: "
-                + ", ".join(sorted(overlap))
-            )
+            st.error("A topic cannot be both weak and strong.")
 
         elif target_mastery < current_mastery:
-            st.error(
-                "Target mastery cannot be lower than current mastery."
-            )
+            st.error("Target cannot be lower than current mastery.")
 
         elif not study_days:
-            st.error("Please select at least one study day.")
+            st.error("Select at least one study day.")
 
         else:
-
-            mastery_gap = max(
-                target_mastery - current_mastery,
-                0
-            )
-
-            weekly_minutes = (
-                daily_study_minutes * len(study_days)
-            )
 
             student = {
                 "name": name,
@@ -189,125 +157,153 @@ with st.form("student_registration"):
                 "subject": subject,
                 "current_mastery": current_mastery,
                 "target_mastery": target_mastery,
-                "mastery_gap": mastery_gap,
+                "mastery_gap": max(
+                    target_mastery - current_mastery, 0
+                ),
+                "priority": classify_priority(
+                    current_mastery, target_mastery
+                ),
                 "weak_topics": weak_topics,
                 "strong_topics": strong_topics,
-                "daily_study_minutes": daily_study_minutes,
+                "daily_minutes": daily_minutes,
                 "study_days": study_days,
-                "weekly_minutes": weekly_minutes
+                "weekly_minutes": daily_minutes * len(study_days)
             }
 
             st.session_state["students"].append(student)
 
-            st.success(
-                f"{name} registered successfully!"
-            )
+            st.success(f"{name} registered successfully!")
 
-# Display registered students
+
+# ==================================
+# ACADEMIC PERFORMANCE DASHBOARD
+# ==================================
+
 st.divider()
-
-st.header("📋 Registered Students")
+st.header("📊 Academic Performance Dashboard")
 
 students = st.session_state["students"]
 
 if students:
 
-    st.metric(
-        "Total Registered Students",
-        len(students)
+    total_students = len(students)
+
+    average_mastery = sum(
+        s["current_mastery"] for s in students
+    ) / total_students
+
+    urgent_count = sum(
+        s["priority"] == "URGENT" for s in students
     )
 
-    student_table = []
+    high_count = sum(
+        s["priority"] == "HIGH" for s in students
+    )
 
-    for student in students:
+    moderate_count = sum(
+        s["priority"] == "MODERATE" for s in students
+    )
 
-        student_table.append({
-            "Name": student["name"],
-            "Student ID": student["id"],
-            "Subject": student["subject"],
-            "Mastery": f"{student['current_mastery']}%",
-            "Target": f"{student['target_mastery']}%",
-            "Gap": f"{student['mastery_gap']}%",
-            "Weekly Hours": round(
-                student["weekly_minutes"] / 60, 2
-            )
+    achieved_count = sum(
+        s["priority"] == "TARGET ACHIEVED" for s in students
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Total Students", total_students)
+
+    col2.metric(
+        "Average Mastery",
+        f"{average_mastery:.1f}%"
+    )
+
+    col3.metric("Urgent Students", urgent_count)
+
+    col4, col5, col6 = st.columns(3)
+
+    col4.metric("High Priority", high_count)
+    col5.metric("Moderate Priority", moderate_count)
+    col6.metric("Target Achieved", achieved_count)
+
+    # Student priority table
+    st.subheader("🎯 Student Priority Analysis")
+
+    priority_data = []
+
+    for s in students:
+
+        priority_data.append({
+            "Student": s["name"],
+            "Subject": s["subject"],
+            "Mastery": f"{s['current_mastery']}%",
+            "Target": f"{s['target_mastery']}%",
+            "Gap": f"{s['mastery_gap']}%",
+            "Priority": s["priority"]
         })
 
     st.dataframe(
-        student_table,
+        priority_data,
         use_container_width=True,
         hide_index=True
     )
 
-    # Individual academic profiles
-    st.divider()
-    st.header("🔍 Individual Student Profiles")
+    # Visual priority distribution
+    st.subheader("📈 Priority Distribution")
 
-    for student in students:
+    priority_counts = {
+        "Urgent": urgent_count,
+        "High": high_count,
+        "Moderate": moderate_count,
+        "Target Achieved": achieved_count
+    }
+
+    st.bar_chart(priority_counts)
+
+    # Individual student analysis
+    st.subheader("🔍 Individual Student Analysis")
+
+    for s in students:
 
         with st.expander(
-            f"{student['name']} — {student['id']}"
+            f"{s['name']} — {s['priority']}"
         ):
 
-            st.write(f"**Subject:** {student['subject']}")
-
-            col1, col2, col3 = st.columns(3)
-
-            col1.metric(
-                "Current Mastery",
-                f"{student['current_mastery']}%"
-            )
-
-            col2.metric(
-                "Target Mastery",
-                f"{student['target_mastery']}%"
-            )
-
-            col3.metric(
-                "Mastery Gap",
-                f"{student['mastery_gap']}%"
-            )
-
-            st.subheader("🔴 Weak Topics")
-
-            for topic in student["weak_topics"]:
-                st.write(f"🔴 {topic}")
-
-            st.subheader("🟢 Strong Topics")
-
-            for topic in student["strong_topics"]:
-                st.write(f"🟢 {topic}")
-
-            st.subheader("📅 Study Availability")
-
-            for day in student["study_days"]:
-                st.write(f"✅ {day}")
+            st.write(f"Subject: {s['subject']}")
 
             st.metric(
-                "Weekly Study Capacity",
-                f"{student['weekly_minutes'] / 60:g} hours"
+                "Mastery Gap",
+                f"{s['mastery_gap']} percentage points"
             )
 
-            if student["mastery_gap"] == 0:
-                st.success("Target mastery already achieved!")
-            else:
-                st.info(
-                    f"{student['mastery_gap']} percentage "
-                    "points remaining to target mastery."
-                )
+            st.write(
+                f"Current mastery: {s['current_mastery']}%"
+            )
+
+            st.write(
+                f"Target mastery: {s['target_mastery']}%"
+            )
+
+            st.write(
+                f"Support Priority: {s['priority']}"
+            )
+
+            st.write("Weak Topics:", ", ".join(s["weak_topics"]))
 
 else:
 
-    st.info("No students registered yet.")
+    st.info(
+        "No student records available. Register students "
+        "to generate academic performance insights."
+    )
 
 st.divider()
 
 st.caption(
-    "AI Study Plan Generator | Student Registration Module"
+    "AI Study Plan Generator | Academic Performance Analysis"
 )
 
 st.warning(
-    "Student records currently exist only in Streamlit session "
-    "memory. Permanent storage and duplicate protection across "
-    "sessions will be implemented using Supabase."
+    "Priority classifications are rule-based screening indicators. "
+    "Student records are currently held in session memory. "
+    "Supabase persistence will be added in a later mission."
 )
