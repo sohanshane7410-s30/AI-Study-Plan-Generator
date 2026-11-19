@@ -62,20 +62,15 @@ with st.form("student_registration"):
         step=15
     )
 
-    st.subheader("📅 Preferred Study Days")
-
     available_days = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
+        "Monday", "Tuesday", "Wednesday",
+        "Thursday", "Friday", "Saturday", "Sunday"
     ]
 
+    st.subheader("📅 Preferred Study Days")
+
     study_days = st.multiselect(
-        "Select the days you can study",
+        "Select available days",
         available_days,
         default=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
     )
@@ -112,7 +107,7 @@ with st.form("student_registration"):
 
         elif overlap:
             st.error(
-                "A topic cannot be both weak and strong: "
+                "Topics cannot be both weak and strong: "
                 + ", ".join(sorted(overlap))
             )
 
@@ -124,6 +119,8 @@ with st.form("student_registration"):
 
         else:
 
+            weekly_minutes = daily_study_minutes * len(study_days)
+
             st.session_state["student_preview"] = {
                 "name": student_name.strip(),
                 "id": student_id.strip(),
@@ -133,7 +130,8 @@ with st.form("student_registration"):
                 "weak_topics": weak_topics,
                 "strong_topics": strong_topics,
                 "daily_study_minutes": daily_study_minutes,
-                "study_days": study_days
+                "study_days": study_days,
+                "weekly_minutes": weekly_minutes
             }
 
             st.success("Student profile submitted successfully!")
@@ -153,8 +151,15 @@ if "student_preview" in st.session_state:
 
     col4, col5 = st.columns(2)
 
-    col4.metric("Current Mastery", f"{student['current_mastery']}%")
-    col5.metric("Target Mastery", f"{student['target_mastery']}%")
+    col4.metric(
+        "Current Mastery",
+        f"{student['current_mastery']}%"
+    )
+
+    col5.metric(
+        "Target Mastery",
+        f"{student['target_mastery']}%"
+    )
 
     st.subheader("🔴 Weak Topics")
 
@@ -168,23 +173,46 @@ if "student_preview" in st.session_state:
 
     st.subheader("⏰ Daily Study Availability")
 
-    minutes = student["daily_study_minutes"]
-
     st.metric(
-        "Study Time",
-        f"{minutes} minutes",
-        f"{minutes / 60:g} hours per day"
+        "Daily Study Time",
+        f"{student['daily_study_minutes']} minutes"
     )
 
     st.subheader("📅 Weekly Study Availability")
 
-    st.write(f"Available study days: {len(student['study_days'])}")
-
     for day in student["study_days"]:
         st.write(f"✅ {day}")
 
+    st.divider()
+
+    st.header("📊 Weekly Study Capacity")
+
+    weekly_minutes = student["weekly_minutes"]
+    weekly_hours = weekly_minutes / 60
+
+    col1, col2 = st.columns(2)
+
+    col1.metric(
+        "Weekly Study Minutes",
+        f"{weekly_minutes} minutes"
+    )
+
+    col2.metric(
+        "Weekly Study Hours",
+        f"{weekly_hours:g} hours"
+    )
+
+    st.progress(
+        min(weekly_minutes / 1200, 1.0)
+    )
+
+    st.success(
+        f"{student['name']} has {weekly_hours:g} hours "
+        "available for study each week."
+    )
+
     st.info(
-        "Student information is temporarily stored in the "
-        "Streamlit session. Permanent database storage "
-        "will be implemented in a later mission."
+        "This is the student's available study capacity, "
+        "not a claim about actual completed study time. "
+        "Permanent database storage will be added later."
     )
