@@ -61,6 +61,16 @@ with st.form("student_registration"):
         placeholder="Percentages, Basic arithmetic"
     )
 
+    st.subheader("⏰ Study Availability")
+
+    daily_study_minutes = st.number_input(
+        "Daily Available Study Time (minutes)",
+        min_value=15,
+        max_value=240,
+        value=120,
+        step=15
+    )
+
     submitted = st.form_submit_button(
         "Register Student",
         use_container_width=True
@@ -94,7 +104,7 @@ with st.form("student_registration"):
 
         elif overlap:
             st.error(
-                "A topic cannot be listed as both weak and strong: "
+                "A topic cannot be both weak and strong: "
                 + ", ".join(overlap)
             )
 
@@ -110,7 +120,8 @@ with st.form("student_registration"):
                 "current_mastery": current_mastery,
                 "target_mastery": target_mastery,
                 "weak_topics": weak_topics,
-                "strong_topics": strong_topics
+                "strong_topics": strong_topics,
+                "daily_study_minutes": daily_study_minutes
             }
 
             st.success("Student profile submitted successfully!")
@@ -149,6 +160,17 @@ if "student_preview" in st.session_state:
 
     for topic in student["strong_topics"]:
         st.write(f"🟢 {topic}")
+
+    st.subheader("⏰ Daily Study Availability")
+
+    minutes = student["daily_study_minutes"]
+    hours = minutes / 60
+
+    st.metric(
+        "Available Study Time",
+        f"{minutes} minutes",
+        f"{hours:g} hours per day"
+    )
 
     st.info(
         "Student information is currently stored in the "
