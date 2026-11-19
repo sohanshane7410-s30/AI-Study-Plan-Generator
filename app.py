@@ -4,9 +4,9 @@ import pandas as pd
 import html
 
 
-# =========================================================
+# =====================================================
 # 1. APPLICATION CONFIGURATION
-# =========================================================
+# =====================================================
 
 st.set_page_config(
     page_title="Learning Intelligence Studio",
@@ -16,9 +16,9 @@ st.set_page_config(
 )
 
 
-# =========================================================
-# 2. PREMIUM DESIGN SYSTEM
-# =========================================================
+# =====================================================
+# 2. DESIGN SYSTEM
+# =====================================================
 
 st.markdown("""
 <style>
@@ -71,11 +71,11 @@ h3 {
 }
 
 [data-testid="stMetric"] {
-    background: #FFFFFF;
+    background: white;
     padding: 19px;
     border-radius: 16px;
     border: 1px solid #E6E8F1;
-    box-shadow: 0 4px 17px rgba(31, 42, 80, .045);
+    box-shadow: 0 4px 17px rgba(31,42,80,.045);
 }
 
 [data-testid="stMetricLabel"] {
@@ -91,13 +91,12 @@ h3 {
 .stButton > button,
 .stFormSubmitButton > button,
 .stDownloadButton > button {
-    background: linear-gradient(110deg, #6250D3, #8368E8);
+    background: linear-gradient(110deg,#6250D3,#8368E8);
     color: white;
     border: none;
     border-radius: 11px;
     padding: .65rem 1.1rem;
     font-weight: 700;
-    transition: .2s ease;
 }
 
 .stButton > button:hover,
@@ -118,11 +117,11 @@ h3 {
 }
 
 [data-testid="stForm"] {
-    background: #FFFFFF;
+    background: white;
     padding: 24px;
     border-radius: 17px;
     border: 1px solid #E7E9F2;
-    box-shadow: 0 4px 18px rgba(31, 42, 80, .04);
+    box-shadow: 0 4px 18px rgba(31,42,80,.04);
 }
 
 [data-testid="stExpander"] {
@@ -142,24 +141,17 @@ h3 {
 }
 
 .stProgress > div > div > div {
-    background: linear-gradient(90deg, #6653DB, #48C9A5);
-}
-
-hr {
-    border-color: #E4E7F0 !important;
+    background: linear-gradient(90deg,#6653DB,#48C9A5);
 }
 
 .hero {
     background: linear-gradient(
-        115deg,
-        #111A35 0%,
-        #282C68 58%,
-        #6352C8 100%
+        115deg,#111A35 0%,#282C68 58%,#6352C8 100%
     );
     padding: 35px;
     border-radius: 21px;
     margin-bottom: 24px;
-    box-shadow: 0 12px 30px rgba(45, 42, 105, .15);
+    box-shadow: 0 12px 30px rgba(45,42,105,.15);
 }
 
 .hero-eyebrow {
@@ -170,7 +162,7 @@ hr {
 }
 
 .hero h1 {
-    color: #FFFFFF !important;
+    color: white !important;
     font-size: 35px !important;
     margin: 12px 0 !important;
 }
@@ -207,30 +199,19 @@ hr {
     font-size: 13px;
 }
 
-.section-label {
-    color: #7166CB;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-}
-
 .profile-hero {
-    background: linear-gradient(120deg, #171F42, #5245A5);
+    background: linear-gradient(120deg,#171F42,#5245A5);
     padding: 26px;
     border-radius: 19px;
     margin: 12px 0 20px;
-    color: white;
 }
 
 .profile-hero h2 {
     color: white !important;
-    font-size: 29px;
-    margin: 10px 0;
 }
 
 .focus-chip {
     background: #FFF0F0;
-    border: 1px solid #F5D8D8;
     color: #9E3535;
     padding: 11px 14px;
     margin: 7px 0;
@@ -240,7 +221,6 @@ hr {
 
 .strength-chip {
     background: #EAF8F2;
-    border: 1px solid #D3EDDF;
     color: #24775A;
     padding: 11px 14px;
     margin: 7px 0;
@@ -256,7 +236,7 @@ hr {
 }
 
 .calendar-study {
-    background: linear-gradient(180deg, #EDEAFF, #FFFFFF);
+    background: linear-gradient(180deg,#EDEAFF,#FFFFFF);
     border: 1px solid #D9D1FF;
 }
 
@@ -273,24 +253,32 @@ footer, #MainMenu {
 """, unsafe_allow_html=True)
 
 
-# =========================================================
+# =====================================================
 # 3. SESSION STATE
-# =========================================================
+# =====================================================
 
 if "students" not in st.session_state:
     st.session_state["students"] = []
 
+if "study_plans" not in st.session_state:
+    st.session_state["study_plans"] = {}
+
 if not isinstance(st.session_state["students"], list):
     st.session_state["students"] = []
 
+if not isinstance(st.session_state["study_plans"], dict):
+    st.session_state["study_plans"] = {}
 
-# =========================================================
-# 4. DATA PROCESSING FUNCTIONS
-# =========================================================
+
+# =====================================================
+# 4. DATA PROCESSING
+# =====================================================
 
 def safe_int(value, default=0):
+
     try:
         return int(float(value))
+
     except (TypeError, ValueError, OverflowError):
         return default
 
@@ -353,13 +341,14 @@ def parse_topic_scores(raw_text):
 
         try:
             score = float(raw_score.strip())
+
         except ValueError:
             errors.append(f"Invalid score for {topic}.")
             continue
 
         if not 0 <= score <= 100:
             errors.append(
-                f"{topic} must have a score between 0 and 100."
+                f"{topic} must have a score from 0 to 100."
             )
             continue
 
@@ -387,13 +376,14 @@ def parse_assessment_history(raw_text):
 
         try:
             score = float(item)
+
         except ValueError:
             errors.append(f"Invalid assessment score: {item}")
             continue
 
         if not 0 <= score <= 100:
             errors.append(
-                f"Assessment score {score} must be between 0 and 100."
+                f"Assessment score {score} must be from 0 to 100."
             )
             continue
 
@@ -402,9 +392,9 @@ def parse_assessment_history(raw_text):
     return history, errors
 
 
-# =========================================================
+# =====================================================
 # 5. ACADEMIC INTELLIGENCE ENGINES
-# =========================================================
+# =====================================================
 
 def classify_priority(current, target):
 
@@ -455,7 +445,7 @@ def detect_learning_risk(student):
         return {
             "risk": "HIGH",
             "explanation": (
-                "Low current mastery or a substantial remaining gap."
+                "Low mastery or a substantial remaining mastery gap."
             )
         }
 
@@ -506,7 +496,7 @@ def detect_learning_trend(history):
             "trend": "DECLINING",
             "change": change,
             "explanation": (
-                f"Performance decreased by {abs(change)} percentage points."
+                f"Performance decreased by {abs(change)} points."
             )
         }
 
@@ -538,18 +528,12 @@ def classify_student_segment(student):
     if current >= target:
 
         segment = "ENRICHMENT"
-
-        explanation = (
-            "Target achieved. Consider advanced learning activities."
-        )
+        explanation = "Target achieved. Consider enrichment activities."
 
     elif risk["risk"] == "HIGH":
 
         segment = "INTENSIVE SUPPORT"
-
-        explanation = (
-            "Substantial learning gap or low mastery requires investigation."
-        )
+        explanation = "Substantial gap or low mastery requires investigation."
 
     elif (
         risk["risk"] == "MODERATE"
@@ -558,19 +542,12 @@ def classify_student_segment(student):
     ):
 
         segment = "TARGETED SUPPORT"
-
-        explanation = (
-            "Targeted practice may address risk, declining trends "
-            "or multiple weak topics."
-        )
+        explanation = "Targeted practice may address identified needs."
 
     else:
 
         segment = "PROGRESS MONITORING"
-
-        explanation = (
-            "Continue routine assessments and monitor progress."
-        )
+        explanation = "Continue routine assessments and progress monitoring."
 
     return {
         "segment": segment,
@@ -642,35 +619,29 @@ def calculate_intervention_priority(student):
     if total >= 65:
 
         priority = "P1 - URGENT"
-
         recommendation = (
-            "Prompt teacher investigation, foundational concept review "
-            "and individualized instructional support."
+            "Prompt teacher investigation and individualized support."
         )
 
     elif total >= 45:
 
         priority = "P2 - HIGH"
-
         recommendation = (
-            "Schedule targeted practice, investigate weak topics "
-            "and reassess learning."
+            "Schedule targeted practice and reassess learning."
         )
 
     elif total >= 25:
 
         priority = "P3 - SCHEDULED"
-
         recommendation = (
-            "Schedule focused support and monitor the next assessment."
+            "Schedule focused practice and monitor progress."
         )
 
     else:
 
         priority = "P4 - MONITOR"
-
         recommendation = (
-            "Continue routine monitoring and provide additional practice."
+            "Continue routine monitoring and additional practice."
         )
 
     return {
@@ -684,9 +655,256 @@ def calculate_intervention_priority(student):
     }
 
 
-# =========================================================
-# 6. BACKWARD-COMPATIBLE DATA MIGRATION
-# =========================================================
+# =====================================================
+# 6. MISSION 4 — STUDY PLAN GENERATION ENGINE
+# =====================================================
+
+def generate_study_plan(student):
+    """
+    Generates a foundational weekly learning plan.
+
+    Topics with the lowest recorded assessment scores
+    are scheduled first and rotated across available days.
+
+    Each daily session is divided into:
+    20% concept review
+    60% guided practice
+    20% knowledge check
+    """
+
+    days = student["study_days"]
+    daily_minutes = student["daily_minutes"]
+
+    if not days:
+        raise ValueError("Student has no available study days.")
+
+    if daily_minutes < 15:
+        raise ValueError("Daily study availability is too low.")
+
+    if not student["weak_topics"]:
+        raise ValueError("No weak topics have been recorded.")
+
+    score_lookup = {
+        topic.casefold(): score
+        for topic, score in student["topic_scores"].items()
+    }
+
+    # Sort weak topics by lowest assessment score.
+    ordered_topics = sorted(
+        student["weak_topics"],
+        key=lambda topic: score_lookup.get(
+            topic.casefold(), 50
+        )
+    )
+
+    # Divide daily time into three learning blocks.
+    review_minutes = max(
+        1, round(daily_minutes * 0.20)
+    )
+
+    check_minutes = max(
+        1, round(daily_minutes * 0.20)
+    )
+
+    practice_minutes = (
+        daily_minutes
+        - review_minutes
+        - check_minutes
+    )
+
+    sessions = []
+
+    for index, day in enumerate(days):
+
+        topic = ordered_topics[
+            index % len(ordered_topics)
+        ]
+
+        score = score_lookup.get(
+            topic.casefold(), 50
+        )
+
+        if score < 40:
+
+            objective = (
+                f"Rebuild foundational understanding of {topic}, "
+                "review key concepts and explain the solution method."
+            )
+
+        elif score < 60:
+
+            objective = (
+                f"Strengthen {topic} through worked examples "
+                "and structured problem solving."
+            )
+
+        elif score < 80:
+
+            objective = (
+                f"Improve accuracy in {topic} and solve mixed "
+                "problems with less support."
+            )
+
+        else:
+
+            objective = (
+                f"Maintain understanding of {topic} through "
+                "challenging practice and retrieval."
+            )
+
+        session = {
+
+            "day": day,
+
+            "topic": topic,
+
+            "topic_score": score,
+
+            "objective": objective,
+
+            "review_minutes": review_minutes,
+
+            "practice_minutes": practice_minutes,
+
+            "check_minutes": check_minutes,
+
+            "total_minutes": daily_minutes,
+
+            "activities": [
+
+                {
+                    "name": "Concept Review",
+                    "minutes": review_minutes,
+                    "instruction": (
+                        f"Review the important ideas and worked "
+                        f"examples in {topic}."
+                    )
+                },
+
+                {
+                    "name": "Guided Practice",
+                    "minutes": practice_minutes,
+                    "instruction": (
+                        f"Complete structured practice exercises "
+                        f"for {topic} and show your working."
+                    )
+                },
+
+                {
+                    "name": "Knowledge Check",
+                    "minutes": check_minutes,
+                    "instruction": (
+                        f"Complete a short knowledge check on {topic} "
+                        "and explain one answer."
+                    )
+                }
+
+            ]
+
+        }
+
+        sessions.append(session)
+
+    total_weekly_minutes = sum(
+        session["total_minutes"]
+        for session in sessions
+    )
+
+    return {
+
+        "student_id": student["id"],
+
+        "student_name": student["name"],
+
+        "subject": student["subject"],
+
+        "current_mastery": student["current_mastery"],
+
+        "target_mastery": student["target_mastery"],
+
+        "mastery_gap": student["mastery_gap"],
+
+        "daily_minutes": daily_minutes,
+
+        "study_days": days.copy(),
+
+        "sessions": sessions,
+
+        "weekly_minutes": total_weekly_minutes,
+
+        "weekly_hours": total_weekly_minutes / 60
+
+    }
+
+
+def build_study_plan_text(plan):
+
+    lines = [
+
+        "LEARNING INTELLIGENCE STUDIO",
+        "PERSONALIZED WEEKLY STUDY PLAN",
+        "=" * 55,
+        "",
+        f"Student: {plan['student_name']}",
+        f"Student ID: {plan['student_id']}",
+        f"Subject: {plan['subject']}",
+        f"Current Mastery: {plan['current_mastery']}%",
+        f"Target Mastery: {plan['target_mastery']}%",
+        f"Mastery Gap: {plan['mastery_gap']} points",
+        "",
+        f"Weekly Capacity: {plan['weekly_minutes']} minutes",
+        f"Weekly Hours: {plan['weekly_hours']:g}",
+        "",
+        "WEEKLY LEARNING SCHEDULE",
+        "=" * 55
+
+    ]
+
+    for session in plan["sessions"]:
+
+        lines.extend([
+
+            "",
+            session["day"].upper(),
+            f"Focus Topic: {session['topic']}",
+            f"Topic Assessment Score: {session['topic_score']}%",
+            f"Daily Objective: {session['objective']}",
+            f"Total Study Time: {session['total_minutes']} minutes",
+            ""
+
+        ])
+
+        for activity in session["activities"]:
+
+            lines.append(
+                f"{activity['name']} - "
+                f"{activity['minutes']} minutes"
+            )
+
+            lines.append(
+                activity["instruction"]
+            )
+
+    lines.extend([
+
+        "",
+        "=" * 55,
+        "PLAN NOTES",
+        "This is a foundational rule-based study plan.",
+        "Activities and time allocations are initial project rules.",
+        "The plan should be reviewed by a teacher or learning coach.",
+        "Actual assignment generation and LLM integration are upcoming.",
+        "",
+        "END OF STUDY PLAN"
+
+    ])
+
+    return "\n".join(lines)
+
+
+# =====================================================
+# 7. BACKWARD-COMPATIBLE DATA MIGRATION
+# =====================================================
 
 def migrate_records(records):
 
@@ -735,9 +953,13 @@ def migrate_records(records):
         student["current_mastery"] = current
         student["target_mastery"] = target
 
-        student["mastery_gap"] = max(target - current, 0)
+        student["mastery_gap"] = max(
+            target - current, 0
+        )
 
-        student["priority"] = classify_priority(current, target)
+        student["priority"] = classify_priority(
+            current, target
+        )
 
         student["weak_topics"] = normalize_topics(
             student.get("weak_topics", [])
@@ -808,7 +1030,8 @@ def migrate_records(records):
         ]
 
         student["weekly_minutes"] = (
-            student["daily_minutes"] * len(student["study_days"])
+            student["daily_minutes"]
+            * len(student["study_days"])
         )
 
         upgraded.append(student)
@@ -823,9 +1046,9 @@ st.session_state["students"] = migrate_records(
 students = st.session_state["students"]
 
 
-# =========================================================
-# 7. REPORT GENERATION
-# =========================================================
+# =====================================================
+# 8. REPORT GENERATION
+# =====================================================
 
 def build_student_report(student):
 
@@ -839,93 +1062,31 @@ def build_student_report(student):
 
     intervention = calculate_intervention_priority(student)
 
-    current = student["current_mastery"]
-    target = student["target_mastery"]
-
-    progress = (
-        min(current / target * 100, 100)
-        if target > 0 else 100
-    )
-
-    topics = sorted(
-        student["topic_scores"].items(),
-        key=lambda item: item[1]
-    )
-
-    recommendations = []
-
-    needs_support = [
-        topic for topic, score in topics if score < 60
-    ]
-
-    developing = [
-        topic for topic, score in topics if 60 <= score < 80
-    ]
-
-    if current >= target:
-
-        recommendations.append(
-            "Maintain mastery through reassessment and enrichment."
-        )
-
-    else:
-
-        if needs_support:
-            recommendations.append(
-                "Prioritize practice in: " + ", ".join(needs_support)
-            )
-
-        if trend["trend"] == "DECLINING":
-            recommendations.append(
-                "Investigate reasons for declining assessment performance."
-            )
-
-        elif trend["trend"] == "IMPROVING":
-            recommendations.append(
-                "Identify successful teaching strategies and reinforce them."
-            )
-
-        if risk["risk"] == "HIGH":
-            recommendations.append(
-                "Arrange prompt teacher review and check foundational understanding."
-            )
-
-        if developing:
-            recommendations.append(
-                "Continue practice in: " + ", ".join(developing)
-            )
-
-    if not recommendations:
-        recommendations.append(
-            "Collect additional assessment evidence before intervention."
-        )
-
     lines = [
 
         "LEARNING INTELLIGENCE STUDIO",
         "STUDENT ACADEMIC PERFORMANCE REPORT",
         "=" * 55,
         "",
-        "1. STUDENT INFORMATION",
-        f"Name: {student['name']}",
+        f"Student: {student['name']}",
         f"Student ID: {student['id']}",
         f"Subject: {student['subject']}",
         "",
-        "2. ACADEMIC PERFORMANCE",
-        f"Current Mastery: {current}%",
-        f"Target Mastery: {target}%",
-        f"Mastery Gap: {student['mastery_gap']} percentage points",
-        f"Progress Toward Target: {progress:.1f}%",
+        f"Current Mastery: {student['current_mastery']}%",
+        f"Target Mastery: {student['target_mastery']}%",
+        f"Mastery Gap: {student['mastery_gap']} points",
         "",
-        "3. LEARNING PRIORITY",
         f"Priority: {student['priority']}",
-        f"Risk: {risk['risk']}",
-        risk["explanation"],
+        f"Learning Risk: {risk['risk']}",
+        f"Learning Trend: {trend['trend']}",
+        f"Learning Segment: {segment['segment']}",
         "",
-        "4. TOPIC PERFORMANCE"
+        "TOPIC PERFORMANCE"
+
     ]
 
-    for topic, score in topics:
+    for topic, score in student["topic_scores"].items():
+
         lines.append(
             f"{topic}: {score}% - {classify_topic_score(score)}"
         )
@@ -933,47 +1094,19 @@ def build_student_report(student):
     lines.extend([
 
         "",
-        "5. LEARNING TREND",
-        f"Trend: {trend['trend']}",
-        f"Net Change: {trend['change']}",
-        trend["explanation"],
+        "INTERVENTION ANALYSIS",
+        f"Intervention Score: {intervention['score']}/95",
+        f"Intervention Priority: {intervention['priority']}",
+        f"Recommended Action: {intervention['recommendation']}",
         "",
-        "6. STUDENT SEGMENTATION",
-        f"Segment: {segment['segment']}",
-        segment["explanation"],
-        "",
-        "7. INTERVENTION PRIORITIZATION",
-        f"Score: {intervention['score']} / 95",
-        f"Priority: {intervention['priority']}",
-        f"Gap Points: {intervention['gap_points']} / 40",
-        f"Mastery Points: {intervention['mastery_points']} / 20",
-        f"Trend Points: {intervention['trend_points']} / 20",
-        f"Topic Points: {intervention['topic_points']} / 15",
-        f"Suggested Action: {intervention['recommendation']}",
-        "",
-        "8. WEEKLY STUDY AVAILABILITY",
+        "STUDY AVAILABILITY",
         f"Daily Minutes: {student['daily_minutes']}",
         f"Available Days: {', '.join(student['study_days'])}",
-        f"Weekly Minutes: {student['weekly_minutes']}",
-        f"Weekly Hours: {student['weekly_minutes'] / 60:g}",
+        f"Weekly Hours: {student['weekly_minutes']/60:g}",
         "",
-        "9. RECOMMENDED ACTIONS"
-
-    ])
-
-    for number, item in enumerate(recommendations, 1):
-        lines.append(f"{number}. {item}")
-
-    lines.extend([
-
-        "",
-        "10. DATA LIMITATIONS",
-        "This report uses transparent Python rules.",
-        "Thresholds are initial project screening criteria.",
-        "Trends use the supplied assessment history.",
-        "Teacher review is required before instructional decisions.",
-        "",
-        "END OF REPORT"
+        "DATA LIMITATIONS",
+        "This report uses initial project screening rules.",
+        "Teacher review is required before instructional decisions."
 
     ])
 
@@ -998,47 +1131,13 @@ def build_cohort_report(records):
         "COHORT ACADEMIC PERFORMANCE SUMMARY",
         "=" * 55,
         "",
-        f"Total Students: {total}",
+        f"Students: {total}",
         f"Average Mastery: {average:.1f}%",
         f"Average Mastery Gap: {average_gap:.1f} points",
         "",
-        "PRIORITY DISTRIBUTION"
+        "INTERVENTION RANKING"
 
     ]
-
-    for name in ["URGENT", "HIGH", "MODERATE", "TARGET ACHIEVED"]:
-
-        count = sum(
-            s["priority"] == name for s in records
-        )
-
-        lines.append(f"{name}: {count}")
-
-    lines.extend(["", "LEARNING RISK DISTRIBUTION"])
-
-    for name in ["HIGH", "MODERATE", "LOW"]:
-
-        count = sum(
-            detect_learning_risk(s)["risk"] == name
-            for s in records
-        )
-
-        lines.append(f"{name}: {count}")
-
-    lines.extend(["", "LEARNING TREND DISTRIBUTION"])
-
-    for name in [
-        "IMPROVING", "DECLINING", "STABLE", "INSUFFICIENT DATA"
-    ]:
-
-        count = sum(
-            detect_learning_trend(
-                s["assessment_history"]
-            )["trend"] == name
-            for s in records
-        )
-
-        lines.append(f"{name}: {count}")
 
     ranked = sorted(
         records,
@@ -1046,9 +1145,7 @@ def build_cohort_report(records):
         reverse=True
     )
 
-    lines.extend(["", "HIGHEST INTERVENTION SCORES"])
-
-    for index, student in enumerate(ranked[:5], 1):
+    for index, student in enumerate(ranked, 1):
 
         result = calculate_intervention_priority(student)
 
@@ -1058,25 +1155,16 @@ def build_cohort_report(records):
         )
 
     lines.extend([
-
         "",
-        "COHORT RECOMMENDATIONS",
-        "Investigate students with high screening risk.",
-        "Review declining assessment trends.",
-        "Prioritize topics with low assessment scores.",
-        "Monitor improving students.",
-        "Provide enrichment to students achieving their targets.",
-        "",
-        "Analysis uses initial project rules and requires teacher review."
-
+        "Teacher review is required before instructional decisions."
     ])
 
     return "\n".join(lines)
 
 
-# =========================================================
-# 8. DISPLAY HELPERS
-# =========================================================
+# =====================================================
+# 9. DISPLAY HELPERS
+# =====================================================
 
 def show_hero(eyebrow, title, description):
 
@@ -1110,62 +1198,9 @@ def show_empty_state(title, description):
     )
 
 
-def get_topic_rows(records):
-
-    rows = []
-
-    for student in records:
-
-        weak = {
-            topic.casefold()
-            for topic in student["weak_topics"]
-        }
-
-        strong = {
-            topic.casefold()
-            for topic in student["strong_topics"]
-        }
-
-        for topic, score in student["topic_scores"].items():
-
-            if topic.casefold() in weak:
-                declared = "Declared Weak"
-
-            elif topic.casefold() in strong:
-                declared = "Declared Strong"
-
-            else:
-                declared = "Unspecified"
-
-            status = classify_topic_score(score)
-
-            review = ""
-
-            if declared == "Declared Weak" and status == "STRONG":
-                review = "Review weak label"
-
-            elif declared == "Declared Strong" and status == "NEEDS SUPPORT":
-                review = "Review strong label"
-
-            rows.append({
-
-                "Student": student["name"],
-                "ID": student["id"],
-                "Subject": student["subject"],
-                "Topic": topic,
-                "Score (%)": score,
-                "Declared Category": declared,
-                "Performance": status,
-                "Review": review
-
-            })
-
-    return rows
-
-
-# =========================================================
-# 9. SIDEBAR NAVIGATION
-# =========================================================
+# =====================================================
+# 10. SIDEBAR NAVIGATION
+# =====================================================
 
 with st.sidebar:
 
@@ -1205,7 +1240,12 @@ with st.sidebar:
 
     st.metric(
         "Students Tracked",
-        len(st.session_state["students"])
+        len(students)
+    )
+
+    st.metric(
+        "Plans Generated",
+        len(st.session_state["study_plans"])
     )
 
     st.caption("Cloud-hosted application")
@@ -1216,22 +1256,17 @@ with st.sidebar:
     st.caption("Portfolio Edition")
 
 
-# =========================================================
-# 10. OVERVIEW PAGE
-# =========================================================
+# =====================================================
+# 11. OVERVIEW PAGE
+# =====================================================
 
 if page == "Overview":
 
     show_hero(
         "YOUR ACADEMIC COMMAND CENTER",
         "Understand. Improve. Master.",
-        "Discover learning gaps, understand student performance, "
+        "Discover learning gaps, understand student performance "
         "and turn academic data into personalized learning journeys."
-    )
-
-    st.markdown(
-        '<div class="section-label">WORKSPACE OVERVIEW</div>',
-        unsafe_allow_html=True
     )
 
     if students:
@@ -1252,19 +1287,14 @@ if page == "Overview":
             for s in students
         )
 
-        declining = sum(
-            detect_learning_trend(
-                s["assessment_history"]
-            )["trend"] == "DECLINING"
-            for s in students
-        )
+        plans_count = len(st.session_state["study_plans"])
 
         c1, c2, c3, c4 = st.columns(4)
 
         c1.metric("Students Tracked", total)
         c2.metric("Average Mastery", f"{average:.1f}%")
         c3.metric("High Screening Risk", high_risk)
-        c4.metric("Targets Achieved", at_target)
+        c4.metric("Study Plans", plans_count)
 
         st.divider()
 
@@ -1274,7 +1304,7 @@ if page == "Overview":
 
             st.subheader("Academic Mastery Overview")
 
-            mastery_df = pd.DataFrame([
+            chart = pd.DataFrame([
                 {
                     "Student": s["name"],
                     "Current Mastery": s["current_mastery"],
@@ -1283,11 +1313,11 @@ if page == "Overview":
                 for s in students
             ]).set_index("Student")
 
-            st.bar_chart(mastery_df)
+            st.bar_chart(chart)
 
         with right:
 
-            st.subheader("Learning Trend Distribution")
+            st.subheader("Learning Trends")
 
             trend_names = [
                 "IMPROVING",
@@ -1296,7 +1326,7 @@ if page == "Overview":
                 "INSUFFICIENT DATA"
             ]
 
-            trend_counts = {
+            counts = {
                 name: sum(
                     detect_learning_trend(
                         s["assessment_history"]
@@ -1308,16 +1338,16 @@ if page == "Overview":
 
             st.bar_chart(
                 pd.DataFrame(
-                    {"Students": list(trend_counts.values())},
+                    {"Students": list(counts.values())},
                     index=trend_names
                 )
             )
 
         st.divider()
 
-        st.subheader("Priority Overview")
+        st.subheader("Student Priority Overview")
 
-        priority_names = [
+        priorities = [
             "URGENT",
             "HIGH",
             "MODERATE",
@@ -1326,84 +1356,40 @@ if page == "Overview":
 
         priority_counts = {
             name: sum(s["priority"] == name for s in students)
-            for name in priority_names
+            for name in priorities
         }
 
         st.bar_chart(
             pd.DataFrame(
                 {"Students": list(priority_counts.values())},
-                index=priority_names
+                index=priorities
             )
         )
-
-        st.subheader("Recent Student Profiles")
-
-        for student in students[-5:][::-1]:
-
-            with st.expander(
-                f"{student['name']} · {student['subject']} · {student['id']}"
-            ):
-
-                c1, c2, c3 = st.columns(3)
-
-                c1.metric(
-                    "Mastery",
-                    f"{student['current_mastery']}%"
-                )
-
-                c2.metric(
-                    "Target",
-                    f"{student['target_mastery']}%"
-                )
-
-                c3.metric(
-                    "Gap",
-                    f"{student['mastery_gap']} points"
-                )
 
     else:
 
         c1, c2, c3 = st.columns(3)
 
         c1.metric("Students Tracked", 0)
-        c2.metric("Learning Insights", 0)
-        c3.metric("Reports Generated", 0)
+        c2.metric("Plans Generated", 0)
+        c3.metric("Academic Insights", 0)
 
         show_empty_state(
             "Your learning workspace is ready.",
-            "Visit Students to register your first student and "
-            "start generating academic insights."
+            "Visit Students to register your first learner."
         )
 
-    st.divider()
 
-    st.subheader("Your Workspace")
-
-    columns = st.columns(3)
-
-    modules = [
-        ("🧠 Learning Insights", "Understand academic performance."),
-        ("🎯 Intervention Center", "Prioritize student support."),
-        ("📄 Reports", "Generate downloadable reports.")
-    ]
-
-    for column, module in zip(columns, modules):
-
-        with column:
-            show_empty_state(module[0], module[1])
-
-
-# =========================================================
-# 11. STUDENTS PAGE
-# =========================================================
+# =====================================================
+# 12. STUDENTS PAGE
+# =====================================================
 
 elif page == "Students":
 
     show_hero(
         "STUDENT MANAGEMENT",
         "Every learner has a story.",
-        "Create student profiles, record academic evidence, "
-        "and explore each individual learning journey."
+        "Create student profiles and record academic evidence."
     )
 
     st.header("Register a New Student")
@@ -1413,16 +1399,10 @@ elif page == "Students":
         c1, c2 = st.columns(2)
 
         with c1:
-            student_name = st.text_input(
-                "Student Name",
-                placeholder="e.g. Sophia"
-            )
+            student_name = st.text_input("Student Name")
 
         with c2:
-            student_id = st.text_input(
-                "Student ID",
-                placeholder="e.g. STU101"
-            )
+            student_id = st.text_input("Student ID")
 
         subject = st.selectbox(
             "Academic Subject",
@@ -1457,18 +1437,18 @@ elif page == "Students":
         with c1:
             weak_input = st.text_input(
                 "Weak Topics",
-                placeholder="Fractions, Decimals"
+                "Fractions, Decimals"
             )
 
         with c2:
             strong_input = st.text_input(
                 "Strong Topics",
-                placeholder="Percentages, Basic arithmetic"
+                "Percentages, Basic arithmetic"
             )
 
-        st.subheader("Topic-Level Assessment Scores")
+        st.subheader("Topic Assessment Scores")
 
-        topic_scores_input = st.text_area(
+        topic_input = st.text_area(
             "Enter topic scores",
             placeholder=(
                 "Fractions: 35, Decimals: 45, "
@@ -1487,7 +1467,9 @@ elif page == "Students":
 
         daily_minutes = st.number_input(
             "Daily Study Time (minutes)",
-            15, 240, 120,
+            min_value=15,
+            max_value=240,
+            value=120,
             step=15
         )
 
@@ -1521,11 +1503,11 @@ elif page == "Students":
             name = student_name.strip()
             clean_id = student_id.strip().upper()
 
-            weak_topics = parse_topics(weak_input)
-            strong_topics = parse_topics(strong_input)
+            weak = parse_topics(weak_input)
+            strong = parse_topics(strong_input)
 
             topic_scores, score_errors = parse_topic_scores(
-                topic_scores_input
+                topic_input
             )
 
             history, history_errors = parse_assessment_history(
@@ -1533,9 +1515,8 @@ elif page == "Students":
             )
 
             overlap = (
-                {x.casefold() for x in weak_topics}
-                &
-                {x.casefold() for x in strong_topics}
+                {x.casefold() for x in weak}
+                & {x.casefold() for x in strong}
             )
 
             existing_ids = {
@@ -1546,9 +1527,8 @@ elif page == "Students":
                 topic.casefold() for topic in topic_scores
             }
 
-            missing_scores = [
-                topic
-                for topic in weak_topics + strong_topics
+            missing = [
+                topic for topic in weak + strong
                 if topic.casefold() not in topic_lookup
             ]
 
@@ -1558,15 +1538,19 @@ elif page == "Students":
 
             elif clean_id.casefold() in existing_ids:
 
-                st.error("This student ID already exists.")
+                st.error("Student ID already exists.")
 
-            elif not weak_topics or not strong_topics:
+            elif not weak or not strong:
 
                 st.error("Enter at least one weak and one strong topic.")
 
             elif overlap:
 
                 st.error("A topic cannot be both weak and strong.")
+
+            elif target_mastery < current_mastery:
+
+                st.error("Target cannot be lower than current mastery.")
 
             elif score_errors:
 
@@ -1578,11 +1562,10 @@ elif page == "Students":
                 for error in history_errors:
                     st.error(error)
 
-            elif missing_scores:
+            elif missing:
 
                 st.error(
-                    "Add assessment scores for: "
-                    + ", ".join(missing_scores)
+                    "Add assessment scores for: " + ", ".join(missing)
                 )
 
             elif len(history) < 2:
@@ -1592,7 +1575,7 @@ elif page == "Students":
             elif abs(history[-1] - current_mastery) > 0.01:
 
                 st.error(
-                    "The latest assessment score must match current mastery."
+                    "Latest assessment must match current mastery."
                 )
 
             elif not study_days:
@@ -1620,8 +1603,8 @@ elif page == "Students":
                         target_mastery
                     ),
 
-                    "weak_topics": weak_topics,
-                    "strong_topics": strong_topics,
+                    "weak_topics": weak,
+                    "strong_topics": strong,
 
                     "topic_scores": topic_scores,
                     "assessment_history": history,
@@ -1638,33 +1621,28 @@ elif page == "Students":
                 st.session_state["students"].append(student)
 
                 st.success(
-                    f"{name} successfully added to the learning workspace!"
+                    f"{name} registered successfully!"
                 )
-
-    st.divider()
-
-    st.subheader("Registered Students")
 
     if students:
 
-        table = []
+        st.divider()
 
-        for s in students:
-
-            table.append({
-
-                "Student": s["name"],
-                "ID": s["id"],
-                "Subject": s["subject"],
-                "Mastery": s["current_mastery"],
-                "Target": s["target_mastery"],
-                "Gap": s["mastery_gap"],
-                "Priority": s["priority"]
-
-            })
+        st.header("Registered Students")
 
         st.dataframe(
-            pd.DataFrame(table),
+            pd.DataFrame([
+                {
+                    "Name": s["name"],
+                    "ID": s["id"],
+                    "Subject": s["subject"],
+                    "Mastery": s["current_mastery"],
+                    "Target": s["target_mastery"],
+                    "Gap": s["mastery_gap"],
+                    "Priority": s["priority"]
+                }
+                for s in students
+            ]),
             use_container_width=True,
             hide_index=True
         )
@@ -1674,54 +1652,39 @@ elif page == "Students":
         st.header("✨ Interactive Student Spotlight")
 
         selected_id = st.selectbox(
-            "Choose a student to explore",
+            "Choose a student",
             [s["id"] for s in students],
             format_func=lambda sid: next(
                 f"{s['name']} · {s['id']}"
                 for s in students if s["id"] == sid
-            ),
-            key="student_spotlight_selector"
+            )
         )
 
         selected = next(
-            s for s in students
-            if s["id"] == selected_id
+            s for s in students if s["id"] == selected_id
         )
 
         risk = detect_learning_risk(selected)
-
         trend = detect_learning_trend(
             selected["assessment_history"]
         )
-
         segment = classify_student_segment(selected)
-
         intervention = calculate_intervention_priority(selected)
 
         st.markdown(
             f"""
             <div class="profile-hero">
-                <div style="
-                    color:#BDB3FF;
-                    font-size:11px;
-                    font-weight:800;
-                    letter-spacing:2px;
-                ">LEARNER PROFILE</div>
-
-                <h2>{html.escape(selected['name'])}</h2>
-
-                <div style="color:#D6DBF5;font-size:13px;">
-                    {html.escape(selected['id'])}
-                    &nbsp; · &nbsp;
-                    {html.escape(selected['subject'])}
+                <div style="color:#BDB3FF;font-size:11px;
+                font-weight:800;letter-spacing:2px;">
+                    LEARNER PROFILE
                 </div>
-
-                <div style="
-                    color:#83E1C1;
-                    font-size:12px;
-                    margin-top:15px;
-                    font-weight:700;
-                ">
+                <h2>{html.escape(selected['name'])}</h2>
+                <div style="color:#D6DBF5;">
+                    {html.escape(selected['id'])}
+                    · {html.escape(selected['subject'])}
+                </div>
+                <div style="color:#83E1C1;font-size:12px;
+                margin-top:15px;font-weight:700;">
                     ✦ PERSONALIZED LEARNING PROFILE
                 </div>
             </div>
@@ -1731,53 +1694,16 @@ elif page == "Students":
 
         c1, c2, c3, c4 = st.columns(4)
 
-        c1.metric(
-            "Mastery",
-            f"{selected['current_mastery']}%"
-        )
-
-        c2.metric(
-            "Target",
-            f"{selected['target_mastery']}%"
-        )
-
-        c3.metric(
-            "Remaining Gap",
-            f"{selected['mastery_gap']} points"
-        )
-
-        c4.metric(
-            "Intervention Score",
-            f"{intervention['score']}/95"
-        )
-
-        st.subheader("Mastery Journey")
-
-        st.progress(
-            selected["current_mastery"] / 100
-        )
-
-        st.caption(
-            f"Current mastery: {selected['current_mastery']}% "
-            f"· Target: {selected['target_mastery']}%"
-        )
+        c1.metric("Mastery", f"{selected['current_mastery']}%")
+        c2.metric("Target", f"{selected['target_mastery']}%")
+        c3.metric("Gap", f"{selected['mastery_gap']} points")
+        c4.metric("Intervention", f"{intervention['score']}/95")
 
         c1, c2, c3 = st.columns(3)
 
-        with c1:
-            st.markdown("**Learning Risk**")
-            st.write(risk["risk"])
-            st.caption(risk["explanation"])
-
-        with c2:
-            st.markdown("**Learning Trend**")
-            st.write(trend["trend"])
-            st.caption(trend["explanation"])
-
-        with c3:
-            st.markdown("**Learning Segment**")
-            st.write(segment["segment"])
-            st.caption(segment["explanation"])
+        c1.metric("Risk", risk["risk"])
+        c2.metric("Trend", trend["trend"])
+        c3.metric("Segment", segment["segment"])
 
         left, right = st.columns(2)
 
@@ -1789,7 +1715,7 @@ elif page == "Students":
 
                 st.markdown(
                     f'<div class="focus-chip">'
-                    f'● {html.escape(topic)}</div>',
+                    f'{html.escape(topic)}</div>',
                     unsafe_allow_html=True
                 )
 
@@ -1801,68 +1727,43 @@ elif page == "Students":
 
                 st.markdown(
                     f'<div class="strength-chip">'
-                    f'● {html.escape(topic)}</div>',
+                    f'{html.escape(topic)}</div>',
                     unsafe_allow_html=True
                 )
 
-        st.subheader("Topic Assessment Scores")
+        st.progress(selected["current_mastery"] / 100)
 
-        topic_data = pd.DataFrame([
-            {
-                "Topic": topic,
-                "Score": score,
-                "Performance": classify_topic_score(score)
-            }
-            for topic, score in selected["topic_scores"].items()
-        ])
-
-        st.dataframe(
-            topic_data,
-            use_container_width=True,
-            hide_index=True
+        st.caption(
+            f"Weekly available capacity: "
+            f"{selected['weekly_minutes'] / 60:g} hours"
         )
 
         if len(selected["assessment_history"]) >= 2:
 
-            st.subheader("Assessment History")
-
-            history_df = pd.DataFrame({
-                "Mastery (%)": selected["assessment_history"]
-            })
-
-            history_df.index = [
-                f"Assessment {i+1}"
-                for i in range(len(selected["assessment_history"]))
-            ]
-
-            st.line_chart(history_df)
-
-    else:
-
-        show_empty_state(
-            "No students registered yet.",
-            "Use the registration form above to create the first student profile."
-        )
+            st.line_chart(
+                pd.DataFrame({
+                    "Mastery (%)": selected["assessment_history"]
+                })
+            )
 
 
-# =========================================================
-# 12. LEARNING INSIGHTS PAGE
-# =========================================================
+# =====================================================
+# 13. LEARNING INSIGHTS PAGE
+# =====================================================
 
 elif page == "Learning Insights":
 
     show_hero(
         "ACADEMIC INTELLIGENCE",
         "See beyond the scores.",
-        "Investigate mastery gaps, learning risks, weak topics, "
-        "assessment trends and student segments."
+        "Investigate mastery gaps, weak topics, trends and student risk."
     )
 
     if not students:
 
         show_empty_state(
             "No academic data available.",
-            "Register students to unlock the learning intelligence dashboards."
+            "Register students to unlock learning insights."
         )
 
     else:
@@ -1879,14 +1780,12 @@ elif page == "Learning Insights":
             )
 
             gap_rows.append({
-
                 "Student": s["name"],
                 "Mastery": s["current_mastery"],
                 "Target": s["target_mastery"],
                 "Gap": s["mastery_gap"],
-                "Target Progress (%)": round(progress, 1),
+                "Target Progress": round(progress, 1),
                 "Classification": classify_gap(s["mastery_gap"])
-
             })
 
         gap_df = pd.DataFrame(gap_rows)
@@ -1895,19 +1794,17 @@ elif page == "Learning Insights":
 
         c1.metric(
             "Average Gap",
-            f"{gap_df['Gap'].mean():.1f} points"
+            f"{gap_df['Gap'].mean():.1f}"
         )
 
         c2.metric(
             "Largest Gap",
-            f"{gap_df['Gap'].max()} points"
+            f"{gap_df['Gap'].max()}"
         )
 
         c3.metric(
             "Large Gaps",
-            int(
-                (gap_df["Classification"] == "LARGE GAP").sum()
-            )
+            int((gap_df["Classification"] == "LARGE GAP").sum())
         )
 
         st.dataframe(
@@ -1918,37 +1815,23 @@ elif page == "Learning Insights":
 
         st.divider()
 
-        st.header("Learning Risk Analysis")
+        st.header("Risk Detection")
 
-        risk_rows = [
-            {
+        risk_rows = []
+
+        for s in students:
+
+            result = detect_learning_risk(s)
+
+            risk_rows.append({
                 "Student": s["name"],
                 "Mastery": s["current_mastery"],
                 "Gap": s["mastery_gap"],
-                "Risk": detect_learning_risk(s)["risk"],
-                "Reason": detect_learning_risk(s)["explanation"]
-            }
-            for s in students
-        ]
+                "Risk": result["risk"],
+                "Reason": result["explanation"]
+            })
 
         risk_df = pd.DataFrame(risk_rows)
-
-        c1, c2, c3 = st.columns(3)
-
-        c1.metric(
-            "High Risk",
-            sum(r["Risk"] == "HIGH" for r in risk_rows)
-        )
-
-        c2.metric(
-            "Moderate Risk",
-            sum(r["Risk"] == "MODERATE" for r in risk_rows)
-        )
-
-        c3.metric(
-            "Low Risk",
-            sum(r["Risk"] == "LOW" for r in risk_rows)
-        )
 
         st.dataframe(
             risk_df,
@@ -1960,59 +1843,43 @@ elif page == "Learning Insights":
 
         st.header("Topic-Level Performance")
 
-        topic_rows = get_topic_rows(students)
+        topic_rows = []
+
+        for s in students:
+
+            for topic, score in s["topic_scores"].items():
+
+                topic_rows.append({
+                    "Student": s["name"],
+                    "Topic": topic,
+                    "Score": score,
+                    "Performance": classify_topic_score(score)
+                })
 
         if topic_rows:
 
             topic_df = pd.DataFrame(topic_rows)
 
-            c1, c2 = st.columns(2)
-
-            c1.metric(
+            st.metric(
                 "Average Topic Score",
-                f"{topic_df['Score (%)'].mean():.1f}%"
-            )
-
-            c2.metric(
-                "Topics Needing Support",
-                int(
-                    (topic_df["Performance"] == "NEEDS SUPPORT").sum()
-                )
+                f"{topic_df['Score'].mean():.1f}%"
             )
 
             st.dataframe(
-                topic_df.sort_values("Score (%)"),
+                topic_df.sort_values("Score"),
                 use_container_width=True,
                 hide_index=True
             )
 
-            chart_data = topic_df.copy()
+            chart_df = topic_df.copy()
 
-            chart_data["Topic Label"] = (
-                chart_data["Student"] + " - " + chart_data["Topic"]
+            chart_df["Topic Label"] = (
+                chart_df["Student"] + " - " + chart_df["Topic"]
             )
 
             st.bar_chart(
-                chart_data.set_index("Topic Label")[["Score (%)"]]
+                chart_df.set_index("Topic Label")[["Score"]]
             )
-
-            review_df = topic_df[
-                topic_df["Review"] != ""
-            ]
-
-            if not review_df.empty:
-
-                st.subheader("Classification Review")
-
-                st.dataframe(
-                    review_df,
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-        else:
-
-            st.info("No topic assessment information available.")
 
         st.divider()
 
@@ -2027,38 +1894,16 @@ elif page == "Learning Insights":
             )
 
             trend_rows.append({
-
                 "Student": s["name"],
-                "Assessments": len(s["assessment_history"]),
-                "Net Change": result["change"],
                 "Trend": result["trend"],
+                "Net Change": result["change"],
                 "Explanation": result["explanation"]
-
             })
 
-        trend_df = pd.DataFrame(trend_rows)
-
         st.dataframe(
-            trend_df,
+            pd.DataFrame(trend_rows),
             use_container_width=True,
             hide_index=True
-        )
-
-        trend_counts = {
-            name: sum(r["Trend"] == name for r in trend_rows)
-            for name in [
-                "IMPROVING",
-                "DECLINING",
-                "STABLE",
-                "INSUFFICIENT DATA"
-            ]
-        }
-
-        st.bar_chart(
-            pd.DataFrame(
-                {"Students": list(trend_counts.values())},
-                index=list(trend_counts.keys())
-            )
         )
 
         st.divider()
@@ -2072,143 +1917,72 @@ elif page == "Learning Insights":
             result = classify_student_segment(s)
 
             segment_rows.append({
-
                 "Student": s["name"],
                 "Risk": result["risk"],
                 "Trend": result["trend"],
-                "Support Topics": result["support_topics"],
                 "Segment": result["segment"],
                 "Explanation": result["explanation"]
-
             })
 
-        segment_df = pd.DataFrame(segment_rows)
-
         st.dataframe(
-            segment_df,
+            pd.DataFrame(segment_rows),
             use_container_width=True,
             hide_index=True
         )
 
-        segment_names = [
-            "INTENSIVE SUPPORT",
-            "TARGETED SUPPORT",
-            "PROGRESS MONITORING",
-            "ENRICHMENT"
-        ]
-
-        segment_counts = {
-            name: sum(
-                r["Segment"] == name
-                for r in segment_rows
-            )
-            for name in segment_names
-        }
-
-        st.bar_chart(
-            pd.DataFrame(
-                {"Students": list(segment_counts.values())},
-                index=segment_names
-            )
-        )
-
         st.info(
-            "These are initial rule-based analytical indicators, "
-            "not validated educational predictions."
+            "Analytical labels use initial project screening rules "
+            "and are not validated educational predictions."
         )
 
 
-# =========================================================
-# 13. INTERVENTION CENTER
-# =========================================================
+# =====================================================
+# 14. INTERVENTION CENTER
+# =====================================================
 
 elif page == "Intervention Center":
 
     show_hero(
         "INTERVENTION COMMAND CENTER",
         "Know where to focus.",
-        "Rank potential interventions using mastery gaps, "
-        "historical trends and topic-level performance."
+        "Prioritize potential student interventions using academic evidence."
     )
 
     if students:
 
-        intervention_rows = []
+        rows = []
 
         for s in students:
 
             result = calculate_intervention_priority(s)
 
-            intervention_rows.append({
-
+            rows.append({
                 "Student": s["name"],
-                "Student ID": s["id"],
+                "ID": s["id"],
                 "Mastery": s["current_mastery"],
                 "Gap": s["mastery_gap"],
                 "Score": result["score"],
-                "Priority": result["priority"],
-                "Recommendation": result["recommendation"]
-
+                "Priority": result["priority"]
             })
 
-        intervention_df = pd.DataFrame(
-            intervention_rows
-        ).sort_values(
+        df = pd.DataFrame(rows).sort_values(
             "Score",
             ascending=False
         ).reset_index(drop=True)
 
-        intervention_df.insert(
-            0, "Rank", range(1, len(intervention_df) + 1)
-        )
-
-        priorities = [
-            "P1 - URGENT",
-            "P2 - HIGH",
-            "P3 - SCHEDULED",
-            "P4 - MONITOR"
-        ]
-
-        columns = st.columns(4)
-
-        for column, priority in zip(columns, priorities):
-
-            with column:
-
-                column.metric(
-                    priority,
-                    sum(
-                        r["Priority"] == priority
-                        for r in intervention_rows
-                    )
-                )
-
-        st.divider()
+        df.insert(0, "Rank", range(1, len(df) + 1))
 
         st.subheader("Ranked Intervention Queue")
 
         st.dataframe(
-            intervention_df[
-                [
-                    "Rank",
-                    "Student",
-                    "Student ID",
-                    "Score",
-                    "Priority",
-                    "Gap"
-                ]
-            ],
+            df,
             use_container_width=True,
             hide_index=True
         )
 
-        st.subheader("Intervention Score Comparison")
-
         st.bar_chart(
-            intervention_df.set_index("Student")[["Score"]]
+            df.set_index("Student")[["Score"]]
         )
-
-        st.divider()
 
         st.subheader("Decision Explanations")
 
@@ -2220,19 +1994,10 @@ elif page == "Intervention Center":
                 f"{s['name']} · {result['priority']}"
             ):
 
-                c1, c2 = st.columns(2)
-
-                c1.metric(
+                st.metric(
                     "Intervention Score",
                     f"{result['score']} / 95"
                 )
-
-                c2.metric(
-                    "Mastery Gap",
-                    f"{s['mastery_gap']} points"
-                )
-
-                st.write("**Score Breakdown**")
 
                 st.write(
                     f"Mastery gap: {result['gap_points']} / 40"
@@ -2250,16 +2015,7 @@ elif page == "Intervention Center":
                     f"Weak topics: {result['topic_points']} / 15"
                 )
 
-                st.divider()
-
-                st.write("**Recommended Next Action**")
-
                 st.info(result["recommendation"])
-
-        st.warning(
-            "Intervention scores are initial project-specific screening "
-            "heuristics. They are not validated predictive scores."
-        )
 
     else:
 
@@ -2269,195 +2025,319 @@ elif page == "Intervention Center":
         )
 
 
-# =========================================================
-# 14. STUDY PLANNER — WEEKLY CALENDAR
-# =========================================================
+# =====================================================
+# 15. MISSION 4 — STUDY PLANNER
+# =====================================================
 
 elif page == "Study Planner":
 
     show_hero(
         "PERSONALIZED LEARNING",
         "Design the learning week.",
-        "Explore each student's study availability and visualize "
-        "weekly learning capacity."
+        "Transform student performance data into structured "
+        "weekly learning schedules."
     )
 
-    if students:
+    if not students:
+
+        show_empty_state(
+            "Your study planner is waiting.",
+            "Register a student before generating a personalized plan."
+        )
+
+    else:
+
+        st.header("Create a Personalized Study Plan")
 
         selected_id = st.selectbox(
-            "Select Student",
+            "Choose a student",
             [s["id"] for s in students],
             format_func=lambda sid: next(
-                f"{s['name']} ({s['id']})"
+                f"{s['name']} · {s['id']}"
                 for s in students if s["id"] == sid
             ),
-            key="weekly_calendar_student"
+            key="planner_student"
         )
 
         selected = next(
             s for s in students if s["id"] == selected_id
         )
 
-        st.divider()
+        # Student planning context.
 
-        st.subheader(
-            f"📅 {selected['name']}'s Weekly Learning Calendar"
-        )
-
-        st.caption(
-            f"{selected['subject']} · {selected['id']}"
-        )
-
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
 
         c1.metric(
-            "Daily Availability",
-            f"{selected['daily_minutes']} min"
+            "Current Mastery",
+            f"{selected['current_mastery']}%"
         )
 
         c2.metric(
-            "Available Days",
-            len(selected["study_days"])
+            "Target Mastery",
+            f"{selected['target_mastery']}%"
         )
 
         c3.metric(
+            "Mastery Gap",
+            f"{selected['mastery_gap']} points"
+        )
+
+        c4.metric(
             "Weekly Capacity",
             f"{selected['weekly_minutes'] / 60:g} hours"
         )
 
         st.divider()
 
-        st.subheader("Your Learning Week")
+        st.subheader("Topics Requiring Attention")
 
-        days = [
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-            "Sunday"
-        ]
+        topic_lookup = {
+            topic.casefold(): score
+            for topic, score in selected["topic_scores"].items()
+        }
 
-        columns = st.columns(7)
+        weak_topics_sorted = sorted(
+            selected["weak_topics"],
+            key=lambda topic: topic_lookup.get(
+                topic.casefold(), 50
+            )
+        )
 
-        for day, column in zip(days, columns):
+        for topic in weak_topics_sorted:
 
-            available = day in selected["study_days"]
+            score = topic_lookup.get(topic.casefold(), 50)
 
-            with column:
+            c1, c2 = st.columns([3, 1])
 
-                if available:
+            c1.write(f"🔴 **{topic}**")
 
-                    class_name = "calendar-day calendar-study"
+            c2.write(f"{score}%")
 
-                    status = "✦"
-                    label = "STUDY"
-                    minutes = f"{selected['daily_minutes']} min"
+        st.divider()
 
-                else:
+        st.subheader("Weekly Availability")
 
-                    class_name = "calendar-day calendar-rest"
+        st.write(
+            f"**Available days:** "
+            f"{', '.join(selected['study_days'])}"
+        )
 
-                    status = "☁"
-                    label = "REST DAY"
-                    minutes = "Unavailable"
+        st.write(
+            f"**Daily available time:** "
+            f"{selected['daily_minutes']} minutes"
+        )
 
-                st.markdown(
-                    f"""
-                    <div class="{class_name}">
-                        <div style="
-                            color:#685AB8;
-                            font-size:11px;
-                            font-weight:800;
-                        ">{day[:3].upper()}</div>
+        st.write(
+            f"**Total weekly capacity:** "
+            f"{selected['weekly_minutes']} minutes"
+        )
 
-                        <div style="
-                            font-size:27px;
-                            margin:15px 0;
-                        ">{status}</div>
+        st.divider()
 
-                        <div style="
-                            color:#5548B5;
-                            font-size:11px;
-                            font-weight:800;
-                        ">{label}</div>
+        st.subheader("Generate Personalized Plan")
 
-                        <div style="
-                            color:#8790A5;
-                            font-size:11px;
-                            margin-top:9px;
-                        ">{minutes}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
+        st.caption(
+            "The generator prioritizes recorded weak topics, "
+            "rotates focus across available days and creates "
+            "three timed learning activities for each session."
+        )
+
+        if st.button(
+            "✦ Generate Weekly Study Plan",
+            use_container_width=True,
+            key="generate_plan_button"
+        ):
+
+            try:
+
+                plan = generate_study_plan(selected)
+
+                st.session_state["study_plans"][
+                    selected_id
+                ] = plan
+
+                st.success(
+                    f"Weekly study plan generated for {selected['name']}!"
                 )
 
-        st.divider()
+            except ValueError as error:
 
-        st.subheader("Weekly Capacity Breakdown")
+                st.error(str(error))
 
-        capacity = pd.DataFrame({
-            "Study Minutes": [
-                selected["daily_minutes"]
-                if day in selected["study_days"]
-                else 0
-                for day in days
-            ]
-        }, index=days)
-
-        st.bar_chart(capacity)
-
-        st.divider()
-
-        left, right = st.columns(2)
-
-        with left:
-
-            st.subheader("🔴 Focus Areas")
-
-            for topic in selected["weak_topics"]:
-                st.write(f"🔴 {topic}")
-
-        with right:
-
-            st.subheader("🟢 Existing Strengths")
-
-            for topic in selected["strong_topics"]:
-                st.write(f"🟢 {topic}")
-
-        st.success(
-            f"{selected['name']} has "
-            f"{selected['weekly_minutes']} available study minutes "
-            "per week."
+        plan = st.session_state["study_plans"].get(
+            selected_id
         )
 
-        st.info(
-            "This calendar shows available study time, not generated "
-            "or completed assignments. Personalized objectives, "
-            "time allocation and practice scheduling will be built "
-            "in Mission 4."
-        )
+        if plan:
 
-    else:
+            st.divider()
 
-        show_empty_state(
-            "Your calendar is waiting.",
-            "Register a student to create a weekly availability calendar."
-        )
+            st.header(
+                f"📅 {plan['student_name']}'s Weekly Study Plan"
+            )
+
+            c1, c2, c3 = st.columns(3)
+
+            c1.metric(
+                "Study Days",
+                len(plan["study_days"])
+            )
+
+            c2.metric(
+                "Weekly Minutes",
+                f"{plan['weekly_minutes']} min"
+            )
+
+            c3.metric(
+                "Weekly Hours",
+                f"{plan['weekly_hours']:g} hrs"
+            )
+
+            st.divider()
+
+            st.subheader("Weekly Plan Overview")
+
+            overview_rows = []
+
+            for session in plan["sessions"]:
+
+                overview_rows.append({
+
+                    "Day": session["day"],
+
+                    "Focus Topic": session["topic"],
+
+                    "Topic Score": session["topic_score"],
+
+                    "Review": session["review_minutes"],
+
+                    "Practice": session["practice_minutes"],
+
+                    "Knowledge Check": session["check_minutes"],
+
+                    "Total Minutes": session["total_minutes"]
+
+                })
+
+            overview_df = pd.DataFrame(overview_rows)
+
+            st.dataframe(
+                overview_df,
+                use_container_width=True,
+                hide_index=True
+            )
+
+            st.divider()
+
+            st.subheader("Daily Learning Sessions")
+
+            for session in plan["sessions"]:
+
+                with st.expander(
+                    f"{session['day']} · "
+                    f"{session['topic']} · "
+                    f"{session['total_minutes']} minutes"
+                ):
+
+                    st.markdown(
+                        f"**Daily Objective:** "
+                        f"{session['objective']}"
+                    )
+
+                    st.progress(
+                        session["topic_score"] / 100
+                    )
+
+                    st.caption(
+                        f"Current topic assessment: "
+                        f"{session['topic_score']}%"
+                    )
+
+                    for activity in session["activities"]:
+
+                        st.markdown(
+                            f"**{activity['name']}** · "
+                            f"{activity['minutes']} minutes"
+                        )
+
+                        st.write(activity["instruction"])
+
+                        st.divider()
+
+            st.subheader("Weekly Time Distribution")
+
+            time_data = pd.DataFrame({
+
+                "Minutes": [
+                    plan["daily_minutes"]
+                    for session in plan["sessions"]
+                ]
+
+            }, index=[
+                session["day"]
+                for session in plan["sessions"]
+            ])
+
+            st.bar_chart(time_data)
+
+            st.divider()
+
+            st.subheader("Download Your Study Plan")
+
+            text_plan = build_study_plan_text(plan)
+
+            st.download_button(
+                "📥 Download Weekly Study Plan",
+                data=text_plan,
+                file_name=(
+                    f"Study_Plan_{selected_id}.txt"
+                ),
+                mime="text/plain",
+                use_container_width=True
+            )
+
+            csv_plan = pd.DataFrame(
+                overview_rows
+            ).to_csv(
+                index=False
+            ).encode("utf-8-sig")
+
+            st.download_button(
+                "📊 Download Schedule as CSV",
+                data=csv_plan,
+                file_name=(
+                    f"Weekly_Schedule_{selected_id}.csv"
+                ),
+                mime="text/csv",
+                use_container_width=True
+            )
+
+            st.warning(
+                "This is a first-version, rule-based study plan. "
+                "Generated activities are instructional suggestions, "
+                "not individualized question sets. Actual assignments, "
+                "adaptive time allocation and LLM-generated teaching "
+                "content are future development tasks."
+            )
+
+        else:
+
+            st.info(
+                "No study plan has been generated for this student yet. "
+                "Click Generate Weekly Study Plan to begin."
+            )
 
 
-# =========================================================
-# 15. PROGRESS TRACKING
-# =========================================================
+# =====================================================
+# 16. PROGRESS TRACKING
+# =====================================================
 
 elif page == "Progress Tracking":
 
     show_hero(
         "STUDENT GROWTH",
         "Progress is a journey.",
-        "Explore assessment history and understand changes "
-        "in academic performance."
+        "Explore assessment histories and academic performance changes."
     )
 
     if students:
@@ -2493,13 +2373,11 @@ elif page == "Progress Tracking":
             f"{selected['mastery_gap']} points"
         )
 
-        st.divider()
-
-        st.subheader("Assessment History")
-
         history = selected["assessment_history"]
 
         if len(history) >= 2:
+
+            st.subheader("Assessment History")
 
             history_df = pd.DataFrame({
                 "Mastery (%)": history
@@ -2512,64 +2390,52 @@ elif page == "Progress Tracking":
 
             st.line_chart(history_df)
 
+            trend = detect_learning_trend(history)
+
+            st.write("**Learning Trend:**", trend["trend"])
+
+            st.info(trend["explanation"])
+
         else:
 
-            st.info("More assessment records are needed.")
+            st.info("Additional assessment data is needed.")
 
-        result = detect_learning_trend(history)
+        st.subheader("Available Study Capacity")
 
-        st.subheader("Learning Trend")
-
-        st.write(result["trend"])
-
-        st.info(result["explanation"])
-
-        st.divider()
-
-        st.subheader("Topic Performance")
-
-        for topic, score in selected["topic_scores"].items():
-
-            st.write(
-                f"**{topic}** — {score}% "
-                f"({classify_topic_score(score)})"
-            )
-
-            st.progress(score / 100)
+        st.metric(
+            "Weekly Study Capacity",
+            f"{selected['weekly_minutes'] / 60:g} hours"
+        )
 
         st.info(
-            "Historical assessment visualization is available. "
-            "Daily task completion, assessment entry and persistent "
-            "progress tracking will be developed in Mission 6."
+            "Daily assignment completion and persistent progress "
+            "tracking will be developed in Mission 6."
         )
 
     else:
 
         show_empty_state(
-            "No progress records yet.",
-            "Register students to explore their assessment histories."
+            "No progress records available.",
+            "Register a student to view assessment history."
         )
 
 
-# =========================================================
-# 16. REPORT GENERATION
-# =========================================================
+# =====================================================
+# 17. REPORTS
+# =====================================================
 
 elif page == "Reports":
 
     show_hero(
         "ACADEMIC REPORTING",
         "Turn data into decisions.",
-        "Generate individual academic reports, cohort summaries "
-        "and downloadable performance datasets."
+        "Generate student performance reports and downloadable datasets."
     )
 
     if students:
 
-        st.subheader("Individual Academic Report")
-
         selected_id = st.selectbox(
-            "Choose Student",
+            "Choose a student",
             [s["id"] for s in students],
             format_func=lambda sid: next(
                 f"{s['name']} ({s['id']})"
@@ -2582,19 +2448,17 @@ elif page == "Reports":
             s for s in students if s["id"] == selected_id
         )
 
-        individual_report = build_student_report(selected)
+        report = build_student_report(selected)
 
-        st.success(
-            f"Report generated for {selected['name']}."
-        )
+        st.subheader("Individual Academic Report")
 
         with st.expander("Preview Student Report", expanded=True):
 
-            st.text(individual_report)
+            st.text(report)
 
         st.download_button(
             "📥 Download Student Report",
-            data=individual_report,
+            data=report,
             file_name=f"Academic_Report_{selected_id}.txt",
             mime="text/plain",
             use_container_width=True
@@ -2604,15 +2468,15 @@ elif page == "Reports":
 
         st.subheader("Cohort Executive Summary")
 
-        cohort_report = build_cohort_report(students)
+        cohort = build_cohort_report(students)
 
         with st.expander("Preview Cohort Report"):
 
-            st.text(cohort_report)
+            st.text(cohort)
 
         st.download_button(
             "📥 Download Cohort Report",
-            data=cohort_report,
+            data=cohort,
             file_name="Cohort_Academic_Report.txt",
             mime="text/plain",
             use_container_width=True
@@ -2646,11 +2510,10 @@ elif page == "Reports":
                 "Mastery Gap": s["mastery_gap"],
                 "Priority": s["priority"],
                 "Risk": risk["risk"],
-                "Learning Trend": trend["trend"],
+                "Trend": trend["trend"],
                 "Segment": segment["segment"],
                 "Intervention Score": intervention["score"],
                 "Intervention Priority": intervention["priority"],
-                "Daily Study Minutes": s["daily_minutes"],
                 "Weekly Study Minutes": s["weekly_minutes"]
 
             })
@@ -2668,7 +2531,7 @@ elif page == "Reports":
         ).encode("utf-8-sig")
 
         st.download_button(
-            "📊 Download Academic Dataset (CSV)",
+            "📊 Download Academic Dataset",
             data=csv_data,
             file_name="Academic_Performance_Data.csv",
             mime="text/csv",
@@ -2678,45 +2541,31 @@ elif page == "Reports":
     else:
 
         show_empty_state(
-            "No reports available yet.",
+            "No reports available.",
             "Register students to generate individual and cohort reports."
         )
 
 
-# =========================================================
-# 17. GLOBAL FOOTER
-# =========================================================
+# =====================================================
+# 18. GLOBAL FOOTER
+# =====================================================
 
 st.divider()
 
-st.markdown(
-    """
-    <div style="
-        text-align:center;
-        padding:15px 0 5px;
-    ">
-        <div style="
-            font-weight:800;
-            color:#554BC0;
-        ">
-            ✦ LEARNING INTELLIGENCE STUDIO
-        </div>
-
-        <div style="
-            font-size:11px;
-            color:#8991A8;
-        ">
-            Personalized Learning · Academic Intelligence · Student Growth
-        </div>
+st.markdown("""
+<div style="text-align:center;padding:15px 0 5px;">
+    <div style="font-weight:800;color:#554BC0;">
+        ✦ LEARNING INTELLIGENCE STUDIO
     </div>
-    """,
-    unsafe_allow_html=True
-)
+    <div style="font-size:11px;color:#8991A8;">
+        Personalized Learning · Academic Intelligence · Student Growth
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 st.caption(
-    "Academic analytics use transparent Python rules. "
-    "These are initial project screening criteria, not validated "
-    "educational predictions. LLM integration, actual personalized "
-    "study-plan generation and persistent Supabase storage remain "
-    "future development milestones."
+    "Study plans use initial rule-based scheduling logic. "
+    "Student information and generated plans currently use "
+    "temporary Streamlit session storage. Supabase persistence "
+    "and LLM integration are planned future milestones."
 )
