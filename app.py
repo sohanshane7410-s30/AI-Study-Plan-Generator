@@ -14,19 +14,10 @@ st.divider()
 
 st.header("👩‍🎓 Student Registration")
 
-st.write("Enter the student's academic and learning information.")
-
 with st.form("student_registration"):
 
-    student_name = st.text_input(
-        "Student Name",
-        placeholder="Enter student name"
-    )
-
-    student_id = st.text_input(
-        "Student ID",
-        placeholder="Enter a unique student ID"
-    )
+    student_name = st.text_input("Student Name")
+    student_id = st.text_input("Student ID")
 
     subject = st.selectbox(
         "Academic Subject",
@@ -71,6 +62,24 @@ with st.form("student_registration"):
         step=15
     )
 
+    st.subheader("📅 Preferred Study Days")
+
+    available_days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+    ]
+
+    study_days = st.multiselect(
+        "Select the days you can study",
+        available_days,
+        default=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    )
+
     submitted = st.form_submit_button(
         "Register Student",
         use_container_width=True
@@ -90,26 +99,28 @@ with st.form("student_registration"):
             if topic.strip()
         ]
 
-        overlap = {
-            topic.lower() for topic in weak_topics
-        } & {
-            topic.lower() for topic in strong_topics
-        }
+        overlap = (
+            {topic.lower() for topic in weak_topics}
+            & {topic.lower() for topic in strong_topics}
+        )
 
         if not student_name.strip() or not student_id.strip():
             st.error("Please enter student name and ID.")
 
         elif not weak_topics or not strong_topics:
-            st.error("Please enter at least one weak topic and one strong topic.")
+            st.error("Please enter weak and strong topics.")
 
         elif overlap:
             st.error(
                 "A topic cannot be both weak and strong: "
-                + ", ".join(overlap)
+                + ", ".join(sorted(overlap))
             )
 
         elif target_mastery <= current_mastery:
             st.error("Target mastery must be greater than current mastery.")
+
+        elif not study_days:
+            st.error("Please select at least one study day.")
 
         else:
 
@@ -121,7 +132,8 @@ with st.form("student_registration"):
                 "target_mastery": target_mastery,
                 "weak_topics": weak_topics,
                 "strong_topics": strong_topics,
-                "daily_study_minutes": daily_study_minutes
+                "daily_study_minutes": daily_study_minutes,
+                "study_days": study_days
             }
 
             st.success("Student profile submitted successfully!")
@@ -141,22 +153,15 @@ if "student_preview" in st.session_state:
 
     col4, col5 = st.columns(2)
 
-    col4.metric(
-        "Current Mastery",
-        f"{student['current_mastery']}%"
-    )
+    col4.metric("Current Mastery", f"{student['current_mastery']}%")
+    col5.metric("Target Mastery", f"{student['target_mastery']}%")
 
-    col5.metric(
-        "Target Mastery",
-        f"{student['target_mastery']}%"
-    )
-
-    st.subheader("🔴 Areas Requiring Improvement")
+    st.subheader("🔴 Weak Topics")
 
     for topic in student["weak_topics"]:
         st.write(f"🔴 {topic}")
 
-    st.subheader("🟢 Existing Strengths")
+    st.subheader("🟢 Strong Topics")
 
     for topic in student["strong_topics"]:
         st.write(f"🟢 {topic}")
@@ -164,16 +169,22 @@ if "student_preview" in st.session_state:
     st.subheader("⏰ Daily Study Availability")
 
     minutes = student["daily_study_minutes"]
-    hours = minutes / 60
 
     st.metric(
-        "Available Study Time",
+        "Study Time",
         f"{minutes} minutes",
-        f"{hours:g} hours per day"
+        f"{minutes / 60:g} hours per day"
     )
 
+    st.subheader("📅 Weekly Study Availability")
+
+    st.write(f"Available study days: {len(student['study_days'])}")
+
+    for day in student["study_days"]:
+        st.write(f"✅ {day}")
+
     st.info(
-        "Student information is currently stored in the "
+        "Student information is temporarily stored in the "
         "Streamlit session. Permanent database storage "
         "will be implemented in a later mission."
     )
