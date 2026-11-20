@@ -38,12 +38,15 @@ st.markdown("""
 [data-testid="stSidebar"] * {
     color: #EDF0FC;
 }
+[data-testid="stSidebar"] hr {
+    border-color: #35405E;
+}
 h1 {
-    color: #18213B;
+    color: #18213B !important;
     font-weight: 800;
 }
 h2 {
-    color: #202B4D;
+    color: #202B4D !important;
     font-weight: 750;
 }
 [data-testid="stMetric"] {
@@ -51,15 +54,24 @@ h2 {
     padding: 18px;
     border-radius: 15px;
     border: 1px solid #E6E8F1;
+    box-shadow: 0 4px 17px rgba(31,42,80,.045);
 }
-.stButton > button {
+[data-testid="stMetricValue"] {
+    color: #594BC5 !important;
+    font-weight: 800;
+}
+.stButton > button,
+.stFormSubmitButton > button,
+.stDownloadButton > button {
     background: #6250D3;
     color: white;
     border-radius: 10px;
     border: none;
     font-weight: 700;
 }
-.stButton > button:hover {
+.stButton > button:hover,
+.stFormSubmitButton > button:hover,
+.stDownloadButton > button:hover {
     background: #4F40B7;
     color: white;
 }
@@ -70,7 +82,12 @@ h2 {
     border: 1px solid #E6E8F1;
 }
 .hero {
-    background: linear-gradient(115deg,#111A35,#282C68,#6352C8);
+    background: linear-gradient(
+        115deg,
+        #111A35,
+        #282C68,
+        #6352C8
+    );
     padding: 32px;
     border-radius: 20px;
     margin-bottom: 24px;
@@ -82,6 +99,12 @@ h2 {
 .hero p {
     color: #D7DEF6;
     font-size: 15px;
+}
+.info-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #E7E9F2;
 }
 footer {
     visibility: hidden;
@@ -100,12 +123,9 @@ if "students" not in st.session_state:
 if "plans" not in st.session_state:
     st.session_state.plans = {}
 
-if "selected_student" not in st.session_state:
-    st.session_state.selected_student = None
-
 
 # =========================================================
-# 4. STUDENT ANALYSIS ENGINE
+# 4. ACADEMIC ANALYSIS ENGINE
 # =========================================================
 
 def classify_priority(score, target):
@@ -114,10 +134,13 @@ def classify_priority(score, target):
 
     if score < 40:
         priority = "URGENT"
+
     elif score < 60:
         priority = "HIGH"
+
     elif score < target:
         priority = "MODERATE"
+
     else:
         priority = "TARGET ACHIEVED"
 
@@ -146,8 +169,18 @@ def analyze_student(student):
     return pd.DataFrame(results)
 
 
+def get_average(student):
+
+    scores = list(student["subjects"].values())
+
+    if not scores:
+        return 0
+
+    return sum(scores) / len(scores)
+
+
 # =========================================================
-# 5. STUDY PLAN GENERATION ENGINE
+# 5. PERSONALIZED STUDY PLAN ENGINE
 # =========================================================
 
 def generate_study_plan(student):
@@ -161,26 +194,28 @@ def generate_study_plan(student):
     for subject, score in subjects.items():
 
         if score < target:
+
             weak_subjects.append({
                 "subject": subject,
                 "score": score,
                 "gap": target - score
             })
 
-    if not weak_subjects:
-        return []
-
-    # Prioritize subjects according to their mastery gaps.
     weak_subjects.sort(
         key=lambda x: x["gap"],
         reverse=True
     )
 
-    # Give every weak subject at least five minutes.
-    base_minutes = 5
-    remaining = daily_minutes - (
-        base_minutes * len(weak_subjects)
-    )
+    if not weak_subjects:
+        return []
+
+    count = len(weak_subjects)
+
+    # Allocate at least five minutes per subject
+    # whenever the available time allows it.
+    minimum = 5 if daily_minutes >= count * 5 else 1
+
+    remaining = daily_minutes - (minimum * count)
 
     total_gap = sum(
         item["gap"] for item in weak_subjects
@@ -190,28 +225,37 @@ def generate_study_plan(student):
 
     for item in weak_subjects:
 
-        exact = remaining * item["gap"] / total_gap
+        exact = (
+            remaining * item["gap"] / total_gap
+            if total_gap > 0 else 0
+        )
 
         allocations.append({
             "subject": item["subject"],
             "score": item["score"],
             "gap": item["gap"],
-            "minutes": base_minutes + int(exact),
+            "minutes": minimum + int(exact),
             "fraction": exact - int(exact)
         })
 
-    # Distribute remaining minutes caused by rounding.
+    # Distribute unused minutes caused by rounding.
     leftover = daily_minutes - sum(
         item["minutes"] for item in allocations
     )
 
-    allocations.sort(
-        key=lambda x: x["fraction"],
+    allocation_order = sorted(
+        range(len(allocations)),
+        key=lambda i: allocations[i]["fraction"],
         reverse=True
     )
 
     for i in range(leftover):
-        allocations[i]["minutes"] += 1
+        allocations[allocation_order[i % count]]["minutes"] += 1
+
+    allocations.sort(
+        key=lambda x: x["gap"],
+        reverse=True
+    )
 
     tasks = []
 
@@ -221,29 +265,31 @@ def generate_study_plan(student):
         subject = item["subject"]
 
         if score < 40:
+
             activity = "Foundation lesson and worked examples"
+
             objective = (
                 "Understand fundamental concepts "
                 "and solve basic questions."
             )
 
         elif score < 60:
+
             activity = "Concept review and guided practice"
+
             objective = (
                 "Strengthen understanding and solve "
                 "guided practice questions."
             )
 
-        elif score < target:
+        else:
+
             activity = "Independent practice and retrieval quiz"
+
             objective = (
                 "Improve accuracy through independent "
                 "practice and self-testing."
             )
-
-        else:
-            activity = "Advanced challenge questions"
-            objective = "Extend learning through advanced problems."
 
         tasks.append({
             "id": str(uuid.uuid4())[:8],
@@ -261,24 +307,11 @@ def generate_study_plan(student):
 # 6. HELPER FUNCTIONS
 # =========================================================
 
-def get_student(student_id):
+def regenerate_plan(student):
 
-    for student in st.session_state.students:
-
-        if student["id"] == student_id:
-            return student
-
-    return None
-
-
-def get_average(student):
-
-    scores = list(student["subjects"].values())
-
-    if not scores:
-        return 0
-
-    return sum(scores) / len(scores)
+    st.session_state.plans[student["id"]] = (
+        generate_study_plan(student)
+    )
 
 
 def get_completed_tasks(student_id):
@@ -297,16 +330,18 @@ def get_progress(student_id):
     if not tasks:
         return 0
 
-    completed = get_completed_tasks(student_id)
-
-    return completed / len(tasks)
+    return get_completed_tasks(student_id) / len(tasks)
 
 
-def regenerate_plan(student):
+def safe_filename(name):
 
-    st.session_state.plans[student["id"]] = (
-        generate_study_plan(student)
+    cleaned = "".join(
+        character if character.isalnum() or character in "-_"
+        else "_"
+        for character in name
     )
+
+    return cleaned or "student"
 
 
 # =========================================================
@@ -335,13 +370,10 @@ with st.sidebar:
 
     st.divider()
 
-    st.caption(
-        "AI STUDY PLAN GENERATOR"
-    )
+    st.caption("AI STUDY PLAN GENERATOR")
 
     st.caption(
-        "Personalized learning. "
-        "Measurable progress."
+        "Personalized learning. Measurable progress."
     )
 
 
@@ -378,14 +410,9 @@ if page == "Dashboard":
     if not students:
 
         st.info(
-            "No students available yet. "
-            "Start by adding your first student."
+            "No students registered yet. "
+            "Select Add Student from the sidebar."
         )
-
-        if st.button("Add Your First Student"):
-
-            st.session_state.selected_student = None
-            st.rerun()
 
     else:
 
@@ -401,16 +428,34 @@ if page == "Dashboard":
 
         at_risk = sum(
             1
-            for s in students
-            if any(score < 60 for score in s["subjects"].values())
+            for student in students
+            if any(
+                score < 60
+                for score in student["subjects"].values()
+            )
         )
 
         col1, col2, col3, col4 = st.columns(4)
 
-        col1.metric("Total Students", total_students)
-        col2.metric("Average Mastery", f"{average:.1f}%")
-        col3.metric("Subjects Tracked", total_subjects)
-        col4.metric("Students Requiring Support", at_risk)
+        col1.metric(
+            "Total Students",
+            total_students
+        )
+
+        col2.metric(
+            "Average Mastery",
+            f"{average:.1f}%"
+        )
+
+        col3.metric(
+            "Subjects Tracked",
+            total_subjects
+        )
+
+        col4.metric(
+            "Students Requiring Support",
+            at_risk
+        )
 
         st.divider()
 
@@ -428,7 +473,8 @@ if page == "Dashboard":
                 ),
                 "Target": student["target"],
                 "Study Progress": round(
-                    get_progress(student["id"]) * 100, 1
+                    get_progress(student["id"]) * 100,
+                    1
                 )
             })
 
@@ -463,8 +509,8 @@ if page == "Dashboard":
             if not urgent.empty:
 
                 with st.expander(
-                    f"⚠️ {student['name']} — "
-                    f"{len(urgent)} subjects need attention"
+                    f"{student['name']} — "
+                    f"{len(urgent)} subjects require support"
                 ):
 
                     st.dataframe(
@@ -483,8 +529,8 @@ elif page == "Add Student":
     st.title("👨‍🎓 Student Registration")
 
     st.write(
-        "Create a student profile and enter current "
-        "subject mastery scores."
+        "Create a student profile and enter "
+        "current subject mastery scores."
     )
 
     with st.form("student_registration"):
@@ -501,12 +547,17 @@ elif page == "Add Student":
 
         target = st.slider(
             "Target Mastery (%)",
-            50, 100, 80
+            50,
+            100,
+            80
         )
 
         daily_minutes = st.slider(
             "Available Daily Study Time (minutes)",
-            30, 360, 120, step=15
+            30,
+            360,
+            120,
+            step=15
         )
 
         subjects_text = st.text_area(
@@ -517,10 +568,7 @@ elif page == "Add Student":
                 "English: 75"
             ),
             height=150,
-            help=(
-                "Enter one subject per line. "
-                "Format: Subject: Score"
-            )
+            help="Enter one subject per line. Format: Subject: Score"
         )
 
         submitted = st.form_submit_button(
@@ -533,6 +581,16 @@ elif page == "Add Student":
 
             st.error(
                 "Please enter the student name and grade."
+            )
+
+        elif any(
+            student["name"].casefold() == name.strip().casefold()
+            and student["grade"].casefold() == grade.strip().casefold()
+            for student in st.session_state.students
+        ):
+
+            st.error(
+                "A student with this name and grade already exists."
             )
 
         else:
@@ -548,7 +606,7 @@ elif page == "Add Student":
 
                     if ":" not in line:
                         raise ValueError(
-                            "Use the format Subject: Score"
+                            "Use the format Subject: Score."
                         )
 
                     subject, score = line.rsplit(":", 1)
@@ -599,13 +657,20 @@ elif page == "Add Student":
 
                 regenerate_plan(student)
 
-                st.session_state.selected_student = student["id"]
-
                 st.success(
                     "Student created and personalized study plan generated!"
                 )
 
                 st.balloons()
+
+                st.subheader("Student Summary")
+
+                st.write("**Student:**", student["name"])
+
+                st.write("**Grade:**", student["grade"])
+
+                st.write("**Average Mastery:**",
+                         f"{get_average(student):.1f}%")
 
             except ValueError as exc:
 
@@ -631,7 +696,7 @@ elif page == "Student Analysis":
         selected = st.selectbox(
             "Select Student",
             students,
-            format_func=lambda x: x["name"],
+            format_func=lambda student: student["name"],
             key="analysis_student"
         )
 
@@ -742,12 +807,13 @@ elif page == "Study Plans":
         student = st.selectbox(
             "Select Student",
             students,
-            format_func=lambda x: x["name"],
+            format_func=lambda student: student["name"],
             key="plan_student"
         )
 
         tasks = st.session_state.plans.get(
-            student["id"], []
+            student["id"],
+            []
         )
 
         st.subheader(
@@ -776,7 +842,7 @@ elif page == "Study Plans":
         if not tasks:
 
             st.success(
-                "All subjects have achieved the target mastery!"
+                "All subjects have achieved target mastery!"
             )
 
         else:
@@ -844,19 +910,19 @@ elif page == "Progress Tracker":
         student = st.selectbox(
             "Select Student",
             students,
-            format_func=lambda x: x["name"],
+            format_func=lambda student: student["name"],
             key="progress_student"
         )
 
         tasks = st.session_state.plans.get(
-            student["id"], []
+            student["id"],
+            []
         )
 
         if not tasks:
 
             st.success(
-                "No pending study activities. "
-                "All subjects have achieved the target."
+                "All subjects have achieved target mastery."
             )
 
         else:
@@ -896,10 +962,13 @@ elif page == "Progress Tracker":
 
             completed = get_completed_tasks(student["id"])
 
-            st.progress(get_progress(student["id"]))
+            progress = get_progress(student["id"])
+
+            st.progress(progress)
 
             st.write(
-                f"Updated completion: {completed}/{len(tasks)}"
+                f"Updated completion: "
+                f"{completed}/{len(tasks)}"
             )
 
         st.divider()
@@ -908,20 +977,22 @@ elif page == "Progress Tracker":
 
         st.write(
             "Enter new mastery scores after reassessment. "
-            "The application will recalculate priorities "
+            "The application will recalculate learning priorities "
             "and generate an updated study plan."
+        )
+
+        subject = st.selectbox(
+            "Select Subject to Reassess",
+            list(student["subjects"].keys()),
+            key="reassessment_subject"
         )
 
         with st.form("mastery_update_form"):
 
-            subject = st.selectbox(
-                "Subject",
-                list(student["subjects"].keys())
-            )
-
             new_score = st.slider(
                 "New Mastery Score (%)",
-                0, 100,
+                0,
+                100,
                 int(student["subjects"][subject])
             )
 
@@ -938,12 +1009,12 @@ elif page == "Progress Tracker":
             regenerate_plan(student)
 
             st.success(
-                f"{subject} updated from {old_score}% "
-                f"to {new_score}%."
+                f"{subject} updated from "
+                f"{old_score}% to {new_score}%."
             )
 
             st.info(
-                "The learning priorities and daily study plan "
+                "Learning priorities and daily study plan "
                 "have been recalculated."
             )
 
@@ -951,7 +1022,7 @@ elif page == "Progress Tracker":
 
 
 # =========================================================
-# 14. REPORTS
+# 14. ACADEMIC REPORTS
 # =========================================================
 
 elif page == "Reports":
@@ -969,25 +1040,28 @@ elif page == "Reports":
         student = st.selectbox(
             "Select Student",
             students,
-            format_func=lambda x: x["name"],
+            format_func=lambda student: student["name"],
             key="report_student"
         )
 
         analysis = analyze_student(student)
 
         tasks = st.session_state.plans.get(
-            student["id"], []
+            student["id"],
+            []
         )
-
-        completed = get_completed_tasks(student["id"])
 
         st.subheader("Student Academic Report")
 
         st.write(f"**Student:** {student['name']}")
+
         st.write(f"**Grade:** {student['grade']}")
+
         st.write(f"**Target:** {student['target']}%")
+
         st.write(
-            f"**Average mastery:** {get_average(student):.1f}%"
+            f"**Average mastery:** "
+            f"{get_average(student):.1f}%"
         )
 
         st.write(
@@ -1026,17 +1100,25 @@ elif page == "Reports":
 
         report = analysis.copy()
 
-        report.insert(0, "Student", student["name"])
-        report["Study Plan Completion (%)"] = round(
-            get_progress(student["id"]) * 100, 1
+        report.insert(
+            0,
+            "Student",
+            student["name"]
         )
+
+        report["Study Plan Completion (%)"] = round(
+            get_progress(student["id"]) * 100,
+            1
+        )
+
+        filename = safe_filename(student["name"])
 
         st.download_button(
             "⬇️ Download Academic Report (CSV)",
-            data=report.to_csv(index=False).encode("utf-8"),
-            file_name=(
-                f"{student['name'].replace(' ', '_')}_report.csv"
-            ),
+            data=report.to_csv(
+                index=False
+            ).encode("utf-8"),
+            file_name=f"{filename}_academic_report.csv",
             mime="text/csv"
         )
 
@@ -1049,9 +1131,7 @@ elif page == "Reports":
                 data=task_report.to_csv(
                     index=False
                 ).encode("utf-8"),
-                file_name=(
-                    f"{student['name'].replace(' ', '_')}_study_plan.csv"
-                ),
+                file_name=f"{filename}_study_plan.csv",
                 mime="text/csv"
             )
 
@@ -1063,11 +1143,10 @@ elif page == "Reports":
 st.divider()
 
 st.caption(
-    "AI Study Plan Generator | Learning Intelligence Studio | "
-    "Personalized Learning & Academic Performance Analytics"
+    "AI Study Plan Generator | Learning Intelligence Studio"
 )
 
 st.caption(
-    "Prototype version: Student data is stored in "
-    "Streamlit session state and is not permanently persisted."
+    "Prototype: Student data is stored in Streamlit session state. "
+    "Records are not permanently saved across sessions."
 )
